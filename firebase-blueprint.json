@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user-specific settings and progress metrics.",
+      "type": "object",
+      "properties": {
+        "booted": { "type": "boolean" },
+        "codename": { "type": "string" },
+        "directive": { "type": "string" },
+        "score": { "type": "number" },
+        "joinedAt": { "type": "number" },
+        "xpLogs": { "type": "object" },
+        "theme": { "type": "string" },
+        "customBuffs": { "type": "object" }
+      },
+      "required": ["booted", "codename", "directive", "score"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A productivity task assigned to a user.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+        "goalId": { "type": "string" },
+        "deadline": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "createdAt": { "type": "number" },
+        "completedAt": { "type": "number" },
+        "completedDateStr": { "type": "string" }
+      },
+      "required": ["title", "priority", "status", "createdAt"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "A long-term objective for the user.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "timeline": { "type": "string", "enum": ["Daily", "Weekly", "Monthly"] },
+        "target": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["title", "timeline", "target", "createdAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "A text record or log entry.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["title", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/artifacts/{appId}/users/{userId}/profile/main": {
+      "schema": "UserProfile",
+      "description": "User's main profile document."
+    },
+    "/artifacts/{appId}/users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Individual tasks for the user."
+    },
+    "/artifacts/{appId}/users/{userId}/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "Individual goals for the user."
+    },
+    "/artifacts/{appId}/users/{userId}/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Individual notes for the user."
+    }
+  }
+}

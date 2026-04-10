@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /artifacts/{appId}/users/{userId}/profile
+    // Document ID: main
+    // Fields:
+    //   - booted: bool (required)
+    //   - codename: string (required, max 50)
+    //   - directive: string (required, max 100)
+    //   - score: number (required)
+    //   - joinedAt: number
+    //   - xpLogs: map (optional)
+    //   - theme: string (optional)
+    //   - customBuffs: map (optional)
+    //
+    // Collection: /artifacts/{appId}/users/{userId}/tasks
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required, max 100)
+    //   - priority: string (required, enum: High, Medium, Low)
+    //   - goalId: string (optional)
+    //   - deadline: string (required, YYYY-MM-DD)
+    //   - time: string (optional, HH:MM)
+    //   - status: string (required, enum: pending, completed)
+    //   - createdAt: number (required)
+    //   - completedAt: number (optional)
+    //   - completedDateStr: string (optional)
+    //
+    // [Similar for goals and notes]
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidString(val, min, max) {
+      return val is string && val.size() >= min && val.size() <= max;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /artifacts/{appId}/users/{userId} {
+      
+      match /profile/main {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && 
+          request.resource.data.keys().hasAll(['booted', 'codename', 'directive', 'score']) &&
+          request.resource.data.booted == true &&
+          isValidString(request.resource.data.codename, 1, 50) &&
+          isValidString(request.resource.data.directive, 1, 100) &&
+          request.resource.data.score == 0;
+        allow update: if isOwner(userId);
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && 
+          isValidString(request.resource.data.title, 1, 100) &&
+          request.resource.data.priority in ['High', 'Medium', 'Low'] &&
+          request.resource.data.status == 'pending';
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /goals/{goalId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && 
+          isValidString(request.resource.data.title, 1, 100) &&
+          request.resource.data.timeline in ['Daily', 'Weekly', 'Monthly'] &&
+          request.resource.data.target is number && request.resource.data.target > 0;
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+
+      match /notes/{noteId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && 
+          isValidString(request.resource.data.title, 1, 100) &&
+          isValidString(request.resource.data.content, 1, 2000);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
