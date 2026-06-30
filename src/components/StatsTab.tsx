@@ -1,6 +1,7 @@
 import React from 'react';
-import { Download, Upload, Pickaxe } from 'lucide-react';
-import { SpatialCard, Badge } from './CommonUI';
+import { Download, Upload, Pickaxe, Heart, Coffee } from 'lucide-react';
+import { motion } from 'motion/react';
+import { SpatialCard, Badge, springPresets } from './CommonUI';
 import { getLocalDateStr } from '../utils';
 
 export const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, handleImport, currentTheme, changeTheme, yieldRange, setYieldRange, yieldData, maxYieldXP, rgbTheme, updateProfile }: any) => {
@@ -208,6 +209,27 @@ export const StatsTab = ({ userData, habits, showToast, handleExport, fileInputR
               <span className="leading-relaxed font-medium">{h.text}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Support Action Section */}
+      <div className="pt-6 flex flex-col items-center justify-center gap-3 text-zinc-500 text-xs font-display tracking-wide border-t border-white/5 select-none">
+        <div className="flex items-center gap-2">
+          <span>made with</span>
+          <Heart size={12} className="text-red-500 fill-red-500 animate-pulse" />
+          <span>by pickko</span>
+          <motion.a 
+            href="https://www.supportkori.com/mdzobaedislamshanto"
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            transition={springPresets.interactive}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-xl font-bold ml-1"
+          >
+            <Coffee size={12} className="shrink-0" />
+            <span>Coffee</span>
+          </motion.a>
         </div>
       </div>
     </div>

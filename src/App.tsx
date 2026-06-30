@@ -12,6 +12,7 @@ import { TasksTab } from './components/TasksTab';
 import { GoalsTab } from './components/GoalsTab';
 import { NotesTab } from './components/NotesTab';
 import { StatsTab } from './components/StatsTab';
+import { springPresets } from './components/CommonUI';
 
 // Shared Utilities
 import { 
@@ -668,15 +669,15 @@ export default function App() {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
                   
-                  // Make the middle item (Goals/Target) the prominent CTA button
                   if (tab.id === 'Goals') {
                     return (
                       <motion.button
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{ scale: 1.12 }}
                         whileTap={{ scale: 0.95 }}
+                        transition={springPresets.interactive}
                         className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-magenta-600 text-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.5)] mx-2 relative z-20 border border-white/30"
                       >
                         <Icon size={28} />
@@ -689,8 +690,9 @@ export default function App() {
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={springPresets.interactive}
                       className={`flex flex-col items-center justify-center p-3.5 rounded-full relative overflow-hidden group ${
                         isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
                       }`}
@@ -699,7 +701,7 @@ export default function App() {
                         <motion.div 
                           layoutId="activeTabBackground"
                           className="absolute inset-0 bg-white/10 rounded-full" 
-                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                          transition={springPresets.fluid}
                         />
                       )}
                       <div className={`relative ${isActive ? 'scale-110' : 'scale-100'} transition-transform duration-400 z-10`}>
