@@ -80,9 +80,9 @@ export const SegmentedControl3D = ({ options, selected, onChange }: any) => (
 );
 
 export const ProgressRing = ({ progress, size = 60, stroke = 6, label, gradientId = "ringGradPrimary" }: any) => {
-  const radius = React.useMemo(() => (size - stroke) / 2, [size, stroke]);
-  const circumference = React.useMemo(() => radius * 2 * Math.PI, [radius]);
-  const offset = React.useMemo(() => circumference - (progress / 100) * circumference, [circumference, progress]);
+  const radius = (size - stroke) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (progress / 100) * circumference;
 
   return (
     <div className="flex flex-col items-center justify-center relative">

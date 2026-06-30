@@ -28,8 +28,8 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
     setTaskTime('');
   };
 
-  const activeTasks = React.useMemo(() => tasks.filter((t: any) => !t.completed), [tasks]);
-  const completedTasks = React.useMemo(() => tasks.filter((t: any) => t.completed), [tasks]);
+  const activeTasks = tasks.filter((t: any) => !t.completed);
+  const completedTasks = tasks.filter((t: any) => t.completed);
 
   return (
     <div className="space-y-6 pb-32 animate-cinematic h-full flex flex-col">

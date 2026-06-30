@@ -519,21 +519,19 @@ export default function App() {
   }
 
   const currentTheme = appData?.profile?.theme || '#00f0ff';
-  const yieldData = React.useMemo(() => getYieldData(yieldRange), [appData?.profile?.xpLogs, yieldRange]);
-  const maxYieldXP = React.useMemo(() => Math.max(...Object.values(appData?.profile?.xpLogs || {}).map(v => Number(v)), 100), [appData?.profile?.xpLogs]);
-  const rgbTheme = React.useMemo(() => hexToRgb(currentTheme), [currentTheme]);
+  const yieldData = getYieldData(yieldRange);
+  const maxYieldXP = Math.max(...Object.values(appData?.profile?.xpLogs || {}).map(v => Number(v)), 100);
+  const rgbTheme = hexToRgb(currentTheme);
 
   // Compute execution progress for today
   const curDateStr = getLocalDateStr();
-  const todayTasks = React.useMemo(() => (appData?.tasks || []).filter((t: any) => t.deadline === curDateStr || (!t.completed && t.deadline < curDateStr)), [appData?.tasks, curDateStr]);
-  const dailyProgressPct = React.useMemo(() => {
-    const totalWeight = todayTasks.reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
-    const completedWeight = todayTasks.filter((t: any) => t.completed).reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
-    return totalWeight === 0 ? 0 : (completedWeight / totalWeight) * 100;
-  }, [todayTasks]);
+  const todayTasks = (appData?.tasks || []).filter((t: any) => t.deadline === curDateStr || (!t.completed && t.deadline < curDateStr));
+  const totalWeight = todayTasks.reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
+  const completedWeight = todayTasks.filter((t: any) => t.completed).reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
+  const dailyProgressPct = totalWeight === 0 ? 0 : (completedWeight / totalWeight) * 100;
 
-  const buff1 = React.useMemo(() => appData?.profile?.customBuffs?.buff1 || { title: 'Extra Effort', xp: 100, lastClaimed: '' }, [appData?.profile?.customBuffs?.buff1]);
-  const buff2 = React.useMemo(() => appData?.profile?.customBuffs?.buff2 || { title: 'Perfect Day', xp: 100, lastClaimed: '' }, [appData?.profile?.customBuffs?.buff2]);
+  const buff1 = appData?.profile?.customBuffs?.buff1 || { title: 'Extra Effort', xp: 100, lastClaimed: '' };
+  const buff2 = appData?.profile?.customBuffs?.buff2 || { title: 'Perfect Day', xp: 100, lastClaimed: '' };
 
   const tabs = [
     { id: 'Dashboard', icon: BarChart2 },

@@ -29,41 +29,42 @@ export const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, c
     return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
   };
 
-  const activeTasks = React.useMemo(() => tasks.filter((t: any) => !t.completed), [tasks]);
-  const activeGoals = React.useMemo(() => {
-    return goals.filter((g: any) => {
-      if (g.current >= g.target) return false;
-      if (!g.lastDoneTime) return true;
+  const activeTasks = tasks.filter((t: any) => !t.completed);
 
-      const timePassed = Date.now() - g.lastDoneTime;
-      const timelineLower = g.timeline.toLowerCase();
+  // Deployed goals that are not fully completed, and are due according to timeline/schedule
+  const activeGoals = goals.filter((g: any) => {
+    if (g.current >= g.target) return false; // Fully achieved
+    if (!g.lastDoneTime) return true; // Never done, so it is due
 
-      if (timelineLower.includes('hour')) {
-        return timePassed >= 3600000;
-      }
-      if (timelineLower.includes('year')) {
-        const lastYear = new Date(g.lastDoneTime).getFullYear();
-        const curYear = new Date().getFullYear();
-        return lastYear !== curYear;
-      }
-      if (timelineLower.includes('month')) {
-        const lastMonth = new Date(g.lastDoneTime).getMonth();
-        const curMonth = new Date().getMonth();
-        const lastYear = new Date(g.lastDoneTime).getFullYear();
-        const curYear = new Date().getFullYear();
-        return lastMonth !== curMonth || lastYear !== curYear;
-      }
-      if (timelineLower.includes('week')) {
-        return !isSameWeek(new Date(g.lastDoneTime).toLocaleDateString(), new Date().toLocaleDateString());
-      }
-      if (timelineLower.includes('daily') || timelineLower.includes('day')) {
-        return new Date(g.lastDoneTime).toLocaleDateString() !== new Date().toLocaleDateString();
-      }
+    const timePassed = Date.now() - g.lastDoneTime;
+    const timelineLower = g.timeline.toLowerCase();
+
+    if (timelineLower.includes('hour')) {
+      return timePassed >= 3600000; // 1 hour
+    }
+    if (timelineLower.includes('year')) {
+      const lastYear = new Date(g.lastDoneTime).getFullYear();
+      const curYear = new Date().getFullYear();
+      return lastYear !== curYear;
+    }
+    if (timelineLower.includes('month')) {
+      const lastMonth = new Date(g.lastDoneTime).getMonth();
+      const curMonth = new Date().getMonth();
+      const lastYear = new Date(g.lastDoneTime).getFullYear();
+      const curYear = new Date().getFullYear();
+      return lastMonth !== curMonth || lastYear !== curYear;
+    }
+    if (timelineLower.includes('week')) {
+      return !isSameWeek(new Date(g.lastDoneTime).toLocaleDateString(), new Date().toLocaleDateString());
+    }
+    if (timelineLower.includes('daily') || timelineLower.includes('day')) {
       return new Date(g.lastDoneTime).toLocaleDateString() !== new Date().toLocaleDateString();
-    });
-  }, [goals]);
+    }
+    return new Date(g.lastDoneTime).toLocaleDateString() !== new Date().toLocaleDateString(); // Default to Daily reset
+  });
 
-  const queueItems = React.useMemo(() => [
+  // Map into unified Action Queue items list
+  const queueItems = [
     ...activeTasks.map((t: any) => ({
       id: `task-${t.id}`,
       title: t.title,
@@ -75,10 +76,10 @@ export const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, c
       id: `goal-${g.id}`,
       title: `${g.title} (${g.timeline})`,
       type: 'goal',
-      priority: 'medium',
+      priority: 'medium', // Default priority for goals
       original: g
     }))
-  ], [activeTasks, activeGoals]);
+  ];
 
   return (
     <div className="space-y-6 pb-32 animate-cinematic">
