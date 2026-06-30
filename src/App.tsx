@@ -488,7 +488,7 @@ const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Change often starts quietly.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">It doesn’t need to be loud or sudden.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-2000">First, let’s take a moment to be here now.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-cinematic delay-3000">We’ll slow down and breathe together.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-cinematic delay-3000">We’ll slow down and breathe.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-4000">
               <TactileButton onClick={handleNext}>Take a breath</TactileButton>
             </div>
