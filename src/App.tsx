@@ -846,17 +846,33 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCus
   // Deployed goals that are not fully completed, and are due according to timeline/schedule
   const activeGoals = goals.filter((g: any) => {
     if (g.current >= g.target) return false; // Fully achieved
-    if (!g.lastDone) return true; // Never done, so it is due
-    if (g.timeline === 'Daily') {
-      return g.lastDone !== curDateStr;
+    if (!g.lastDoneTime) return true; // Never done, so it is due
+
+    const timePassed = Date.now() - g.lastDoneTime;
+    const timelineLower = g.timeline.toLowerCase();
+
+    if (timelineLower.includes('hour')) {
+      return timePassed >= 3600000; // 1 hour
     }
-    if (g.timeline === 'Weekly') {
-      return !isSameWeek(g.lastDone, curDateStr);
+    if (timelineLower.includes('year')) {
+      const lastYear = new Date(g.lastDoneTime).getFullYear();
+      const curYear = new Date().getFullYear();
+      return lastYear !== curYear;
     }
-    if (g.timeline === 'Monthly') {
-      return !isSameMonth(g.lastDone, curDateStr);
+    if (timelineLower.includes('month')) {
+      const lastMonth = new Date(g.lastDoneTime).getMonth();
+      const curMonth = new Date().getMonth();
+      const lastYear = new Date(g.lastDoneTime).getFullYear();
+      const curYear = new Date().getFullYear();
+      return lastMonth !== curMonth || lastYear !== curYear;
     }
-    return true;
+    if (timelineLower.includes('week')) {
+      return !isSameWeek(new Date(g.lastDoneTime).toLocaleDateString(), new Date().toLocaleDateString());
+    }
+    if (timelineLower.includes('daily') || timelineLower.includes('day')) {
+      return new Date(g.lastDoneTime).toLocaleDateString() !== new Date().toLocaleDateString();
+    }
+    return new Date(g.lastDoneTime).toLocaleDateString() !== new Date().toLocaleDateString(); // Default to Daily reset
   });
 
   // Map into unified Action Queue items list
@@ -974,7 +990,7 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCus
                     playSound('complete');
                     addXP(getTaskWeight(item.priority) * 10);
                   } else {
-                    setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr } : g));
+                    setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr, lastDoneTime: Date.now() } : g));
                     playSound('streak');
                     addXP(25);
                     showToast(`Milestone progress: ${item.original.current + 1}/${item.original.target}`);
@@ -1120,14 +1136,17 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [goalTarget, setGoalTarget] = useState<any>(30);
   const [timeline, setTimeline] = useState('Daily');
+  const [customTimeline, setCustomTimeline] = useState('');
+  const [isCustomTimeline, setIsCustomTimeline] = useState(false);
 
   const handleAddGoal = () => {
     if (!newGoalTitle.trim()) return;
+    const finalTimeline = isCustomTimeline ? (customTimeline.trim() || 'Custom') : timeline;
     const safeTarget = Math.max(1, parseInt(goalTarget) || 1);
     setGoals([{
       id: Date.now(),
       title: newGoalTitle,
-      timeline,
+      timeline: finalTimeline,
       target: safeTarget,
       current: 0,
       createdAt: Date.now()
@@ -1135,6 +1154,8 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
     setNewGoalTitle('');
     setGoalTarget(30);
     setTimeline('Daily');
+    setIsCustomTimeline(false);
+    setCustomTimeline('');
   };
 
   return (
@@ -1156,9 +1177,48 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
         </div>
         <div className="flex gap-2 mb-4">
           {['Daily', 'Weekly', 'Monthly'].map(t => (
-            <button key={t} type="button" onClick={() => setTimeline(t)} className={`flex-1 py-2.5 rounded-[12px] text-[10px] font-display font-bold uppercase tracking-widest border transition-colors ${timeline === t ? 'bg-white/10 text-white border-magenta-500/40' : 'bg-black/30 border-transparent text-zinc-500'}`}>{t}</button>
+            <button 
+              key={t} 
+              type="button" 
+              onClick={() => { setTimeline(t); setIsCustomTimeline(false); }} 
+              className={`flex-1 py-2.5 rounded-[12px] text-[10px] font-display font-bold uppercase tracking-widest border transition-colors ${!isCustomTimeline && timeline === t ? 'bg-white/10 text-white border-magenta-500/40' : 'bg-black/30 border-transparent text-zinc-500'}`}
+            >
+              {t}
+            </button>
           ))}
+          <button 
+            type="button" 
+            onClick={() => setIsCustomTimeline(true)} 
+            className={`flex-1 py-2.5 rounded-[12px] text-[10px] font-display font-bold uppercase tracking-widest border transition-colors ${isCustomTimeline ? 'bg-white/10 text-white border-magenta-500/40' : 'bg-black/30 border-transparent text-zinc-500'}`}
+          >
+            Custom...
+          </button>
         </div>
+
+        {isCustomTimeline && (
+          <div className="mb-4 space-y-2 animate-cinematic">
+            <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest block">Custom Frequency</span>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder="e.g. Hourly, Yearly, Bi-weekly..." 
+                className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-white text-xs font-body outline-none focus:border-magenta-500/40"
+                value={customTimeline}
+                onChange={(e) => setCustomTimeline(e.target.value)}
+              />
+              {['Hourly', 'Yearly'].map(preset => (
+                <button 
+                  key={preset} 
+                  type="button" 
+                  onClick={() => setCustomTimeline(preset)} 
+                  className="px-3 py-2 rounded-xl text-[10px] font-display font-bold bg-white/5 border border-white/10 text-zinc-400 hover:text-white transition-colors"
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="space-y-1.5 pt-1 mb-4">
           <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest">Deployment Count</span>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -1209,7 +1269,7 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
                 disabled={isComplete}
                 onClick={() => {
                   if (!isComplete) {
-                    setGoals(goals.map((g: any) => g.id === goal.id ? { ...g, current: g.current + 1, lastDone: getLocalDateStr() } : g));
+                    setGoals(goals.map((g: any) => g.id === goal.id ? { ...g, current: g.current + 1, lastDone: getLocalDateStr(), lastDoneTime: Date.now() } : g));
                     addXP(25);
                   }
                 }}
