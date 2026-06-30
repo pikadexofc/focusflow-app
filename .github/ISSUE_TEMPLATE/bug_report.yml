@@ -1,0 +1,29 @@
+name: 🐛 Bug Report
+description: File a bug report for visual misalignments, rendering stutter, or storage discrepancies.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide a detailed report so we can reproduce the rendering or storage bug.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of the issue. Highlight if it violates 60 FPS transitions or accessibility targets.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed actions to reproduce the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: platform
+    attributes:
+      label: Platform Environment
+      description: Device type (iOS/Android/Web), browser type, and viewport dimensions.
+    validations:
+      required: true
