@@ -213,11 +213,11 @@ export const StatsTab = ({ userData, habits, showToast, handleExport, fileInputR
       </div>
 
       {/* Support Action Section */}
-      <div className="pt-6 flex flex-col items-center justify-center gap-3 text-zinc-500 text-xs font-display tracking-wide border-t border-white/5 select-none">
+      <div className="pt-6 flex flex-col items-center justify-center gap-3 text-zinc-400 text-sm font-display font-semibold tracking-wider border-t border-white/5 select-none">
         <div className="flex items-center gap-2">
-          <span>made with</span>
-          <Heart size={12} className="text-red-500 fill-red-500 animate-pulse" />
-          <span>by pickko</span>
+          <span>MADE WITH</span>
+          <Heart size={14} className="text-red-500 fill-red-500 animate-pulse" />
+          <span>BY PICKKO</span>
           <motion.a 
             href="https://www.supportkori.com/mdzobaedislamshanto"
             target="_blank"
@@ -225,10 +225,9 @@ export const StatsTab = ({ userData, habits, showToast, handleExport, fileInputR
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
             transition={springPresets.interactive}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-xl font-bold ml-1"
+            className="flex items-center justify-center w-10 h-10 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-xl ml-1"
           >
-            <Coffee size={12} className="shrink-0" />
-            <span>Coffee</span>
+            <Coffee size={18} className="shrink-0" />
           </motion.a>
         </div>
       </div>

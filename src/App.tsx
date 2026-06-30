@@ -224,6 +224,16 @@ export const InjectedStyles = () => (
     .delay-4000 { animation-delay: 4000ms; }
     .delay-4500 { animation-delay: 4500ms; }
     .delay-5000 { animation-delay: 5000ms; }
+    .delay-6000 { animation-delay: 6000ms; }
+    .delay-7000 { animation-delay: 7000ms; }
+    .delay-8000 { animation-delay: 8000ms; }
+    .delay-9000 { animation-delay: 9000ms; }
+    .delay-10000 { animation-delay: 10000ms; }
+    .delay-11000 { animation-delay: 11000ms; }
+    .delay-12000 { animation-delay: 12000ms; }
+    .delay-13000 { animation-delay: 13000ms; }
+    .delay-14000 { animation-delay: 14000ms; }
+    .delay-15000 { animation-delay: 15000ms; }
 
     /* Utilities */
     .no-scrollbar::-webkit-scrollbar { display: none; }
