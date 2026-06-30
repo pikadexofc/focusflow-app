@@ -4,6 +4,8 @@ import {
   Shield, ArrowRight, Moon, Pickaxe, Heart, Sliders, Sparkles, Zap, Layers, ChevronRight,
   User, Flame, Loader2, BarChart3, Clock, Lock, LayoutGrid, Calendar, Check, Edit2, Save, X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+
 
 const STORAGE_KEY = 'focusflow_v1';
 const weightMap: any = { low: 1, medium: 2, high: 3 };
@@ -346,23 +348,38 @@ interface SpatialCardProps {
 }
 
 const SpatialCard = ({ children, className = '', padding = 'p-6' }: SpatialCardProps) => (
-  <div className={`glass-card ${className}`}>
+  <motion.div 
+    whileHover={{ y: -2, transition: { duration: 0.2 } }}
+    className={`glass-card ${className}`}
+  >
     <div className={`relative z-10 ${padding}`}>
       {children}
     </div>
-  </div>
+  </motion.div>
 );
 
 const TactileButton = ({ children, onClick, className = '', disabled = false }: any) => (
-  <button disabled={disabled} onClick={onClick} className={`btn-tactile rounded-[1.25rem] py-3.5 px-4 font-display font-medium text-[14px] flex justify-center items-center gap-2 text-white/90 w-full ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}>
+  <motion.button 
+    whileHover={disabled ? {} : { scale: 1.01 }}
+    whileTap={disabled ? {} : { scale: 0.98 }}
+    disabled={disabled} 
+    onClick={onClick} 
+    className={`btn-tactile rounded-[1.25rem] py-3.5 px-4 font-display font-medium text-[14px] flex justify-center items-center gap-2 text-white/90 w-full ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}
+  >
     {children}
-  </button>
+  </motion.button>
 );
 
 const Primary3DButton = ({ children, onClick, className = '', disabled = false }: any) => (
-  <button disabled={disabled} onClick={onClick} className={`btn-primary-3d rounded-[1.25rem] py-4 px-4 font-display font-bold text-[15px] flex justify-center items-center gap-2 w-full tracking-wide ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${className}`}>
+  <motion.button 
+    whileHover={disabled ? {} : { scale: 1.01 }}
+    whileTap={disabled ? {} : { scale: 0.98 }}
+    disabled={disabled} 
+    onClick={onClick} 
+    className={`btn-primary-3d rounded-[1.25rem] py-4 px-4 font-display font-bold text-[15px] flex justify-center items-center gap-2 w-full tracking-wide ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${className}`}
+  >
     {children}
-  </button>
+  </motion.button>
 );
 
 const SegmentedControl3D = ({ options, selected, onChange }: any) => (
@@ -377,12 +394,13 @@ const SegmentedControl3D = ({ options, selected, onChange }: any) => (
         {opt.label}
       </button>
     ))}
-    <div 
-      className="absolute top-1 bottom-1 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.15)] transition-all duration-500 z-0"
-      style={{
+    <motion.div 
+      className="absolute top-1 bottom-1 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.15)] z-0"
+      animate={{
         width: `calc(${100 / options.length}% - 4px)`,
         left: `calc(${options.findIndex((o: any) => o.id === selected) * (100 / options.length)}% + 2px)`
       }}
+      transition={{ type: "spring", stiffness: 350, damping: 28 }}
     />
   </div>
 );
@@ -657,7 +675,7 @@ const Onboarding = ({ onComplete }: any) => {
         {step === 7 && (
           <div className="flex-1 flex flex-col justify-center items-center text-center">
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Now, slowly read through what you wrote.</h2>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Try not to judge yourself—just observe.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Try not to judge yourself, just observe.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Notice if any item jumps out as particularly strong or important.</p>
             <p className="text-xl font-display font-medium text-gradient gradient-magenta-orange animate-cinematic delay-3000">That might be a good one to explore first. (We’ll focus on one thing at a time.)</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-4000">
@@ -1038,31 +1056,49 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCus
             Queue is clear. Rest or deploy.
           </div>
         ) : (
-          <div className="space-y-4">
-            {queueItems.sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority)).slice(0, 3).map((item: any) => (
-              <div key={item.id} className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" style={{borderLeftColor: item.type === 'goal' ? '#a855f7' : item.priority === 'high' ? '#ff00ff' : item.priority === 'medium' ? '#00f0ff' : 'transparent'}}>
-                <button type="button" onClick={(e) => {
-                  e.stopPropagation();
-                  if (item.type === 'task') {
-                    executeTask(item.original, e);
-                  } else {
-                    setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr, lastDoneTime: Date.now() } : g));
-                    playSound('streak');
-                    addXP(25);
-                    showToast(`Milestone progress: ${item.original.current + 1}/${item.original.target}`);
-                  }
-                }}>
-                  <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-7 h-7" />
-                </button>
-                <div className="flex-1">
-                  <p className="text-white font-body text-[16px] font-medium leading-tight">{item.title}</p>
-                </div>
-              </div>
-            ))}
+          <motion.div layout className="space-y-4">
+            <AnimatePresence initial={false}>
+              {queueItems.sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority)).slice(0, 3).map((item: any) => (
+                <motion.div 
+                  layout
+                  key={item.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" 
+                  style={{borderLeftColor: item.type === 'goal' ? '#a855f7' : item.priority === 'high' ? '#ff00ff' : item.priority === 'medium' ? '#00f0ff' : 'transparent'}}
+                >
+                  <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    type="button" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (item.type === 'task') {
+                        executeTask(item.original, e);
+                      } else {
+                        setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr, lastDoneTime: Date.now() } : g));
+                        playSound('streak');
+                        addXP(25);
+                        showToast(`Milestone progress: ${item.original.current + 1}/${item.original.target}`);
+                      }
+                    }}
+                  >
+                    <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-7 h-7" />
+                  </motion.button>
+                  <div className="flex-1">
+                    <p className="text-white font-body text-[16px] font-medium leading-tight">{item.title}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
             {queueItems.length > 3 && (
               <p className="text-center text-[10px] font-display text-zinc-500 mt-4 uppercase tracking-widest bg-black/40 rounded-full py-2.5 w-max mx-auto px-5 border border-white/5">+{queueItems.length - 3} more actions</p>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
@@ -1151,36 +1187,67 @@ const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) => {
         <div className="space-y-4">
           <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Active Targets</h2>
           {activeTasks.length === 0 && <p className="text-zinc-600 text-[14px] px-2 font-body">No tasks deployed.</p>}
-          {activeTasks.map((task: any) => (
-            <div key={task.id} className="glass-card p-5 rounded-[1.5rem] flex items-center gap-4 group">
-              <button type="button" onClick={(e) => executeTask(task, e)}>
-                <Circle className="text-zinc-600 group-hover:text-blue-400 transition-colors w-7 h-7" />
-              </button>
-              <div className="flex-1">
-                <p className="text-white font-body text-[16px] font-medium leading-tight">{task.title}</p>
-                <span className="text-[9px] font-display font-bold text-zinc-500 uppercase tracking-wider block mt-1">
-                  {task.deadline === getLocalDateStr() ? 'Due Today' : `Due: ${task.deadline}`}
-                  {task.time ? ` at ${format12Hour(task.time)}` : ''}
-                </span>
-              </div>
-              <Badge text={task.priority} colorClass={
-                task.priority === 'high' ? 'bg-magenta-500/20 text-magenta-300 border-magenta-500/30' : 
-                task.priority === 'medium' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 
-                'bg-zinc-800 text-zinc-400 border-white/5'
-              } />
-            </div>
-          ))}
+          <motion.div layout className="space-y-4">
+            <AnimatePresence initial={false}>
+              {activeTasks.map((task: any) => (
+                <motion.div 
+                  layout
+                  key={task.id} 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="glass-card p-5 rounded-[1.5rem] flex items-center gap-4 group"
+                >
+                  <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    type="button" 
+                    onClick={(e) => executeTask(task, e)}
+                  >
+                    <Circle className="text-zinc-600 group-hover:text-blue-400 transition-colors w-7 h-7" />
+                  </motion.button>
+                  <div className="flex-1">
+                    <p className="text-white font-body text-[16px] font-medium leading-tight">{task.title}</p>
+                    <span className="text-[9px] font-display font-bold text-zinc-500 uppercase tracking-wider block mt-1">
+                      {task.deadline === getLocalDateStr() ? 'Due Today' : `Due: ${task.deadline}`}
+                      {task.time ? ` at ${format12Hour(task.time)}` : ''}
+                    </span>
+                  </div>
+                  <Badge text={task.priority} colorClass={
+                    task.priority === 'high' ? 'bg-magenta-500/20 text-magenta-300 border-magenta-500/30' : 
+                    task.priority === 'medium' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 
+                    'bg-zinc-800 text-zinc-400 border-white/5'
+                  } />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         </div>
 
         {completedTasks.length > 0 && (
           <div className="space-y-4 opacity-50">
             <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Cleared</h2>
-            {completedTasks.map((task: any) => (
-              <div key={task.id} className="glass-recessed p-5 rounded-[1.5rem] flex items-center gap-4">
-                <CheckCircle2 className="text-blue-400/40 w-6 h-6" />
-                <p className="text-zinc-500 font-body text-[15px] line-through leading-tight">{task.title}</p>
-              </div>
-            ))}
+            <motion.div layout className="space-y-4">
+              <AnimatePresence initial={false}>
+                {completedTasks.map((task: any) => (
+                  <motion.div 
+                    layout
+                    key={task.id} 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="glass-recessed p-5 rounded-[1.5rem] flex items-center gap-4"
+                  >
+                    <CheckCircle2 className="text-blue-400/40 w-6 h-6" />
+                    <p className="text-zinc-500 font-body text-[15px] line-through leading-tight">{task.title}</p>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           </div>
         )}
       </div>
@@ -1277,37 +1344,44 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
           </button>
         </div>
 
-        {isCustomTimeline && (
-          <div className="mb-4 space-y-3 animate-cinematic">
-            <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest block">Custom Frequency</span>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-zinc-400 font-body">Every</span>
-              <input 
-                type="number" 
-                min="1" 
-                className="w-16 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-white text-xs font-bold text-center outline-none focus:border-magenta-500/40"
-                value={customValue}
-                onChange={(e) => setCustomValue(Math.max(1, parseInt(e.target.value) || 1))}
-              />
-              <div className="flex p-1 bg-black/40 border border-white/10 rounded-xl">
-                {['Hours', 'Days'].map(unit => (
-                  <button
-                    key={unit}
-                    type="button"
-                    onClick={() => setCustomUnit(unit)}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-display font-bold uppercase transition-colors ${
-                      customUnit === unit 
-                        ? 'bg-magenta-500 text-white' 
-                        : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    {unit}
-                  </button>
-                ))}
+        <AnimatePresence>
+          {isCustomTimeline && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 space-y-3 overflow-hidden"
+            >
+              <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest block">Custom Frequency</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-zinc-400 font-body">Every</span>
+                <input 
+                  type="number" 
+                  min="1" 
+                  className="w-16 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-white text-xs font-bold text-center outline-none focus:border-magenta-500/40"
+                  value={customValue}
+                  onChange={(e) => setCustomValue(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+                <div className="flex p-1 bg-black/40 border border-white/10 rounded-xl">
+                  {['Hours', 'Days'].map(unit => (
+                    <button
+                      key={unit}
+                      type="button"
+                      onClick={() => setCustomUnit(unit)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-display font-bold uppercase transition-colors ${
+                        customUnit === unit 
+                          ? 'bg-magenta-500 text-white' 
+                          : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      {unit}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="space-y-1.5 pt-1 mb-4">
           <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest">Deployment Count</span>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -1328,47 +1402,58 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
         </div>
       )}
 
-      <div className="space-y-6">
-        {goals.map((goal: any) => {
-          const progress = (goal.current / goal.target) * 100;
-          const isComplete = goal.current >= goal.target;
-          return (
-            <SpatialCard key={goal.id} padding="p-8" className="border-t border-t-magenta-500/30">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h3 className="text-white font-display font-bold text-2xl leading-tight mb-2">{goal.title}</h3>
-                  <Badge text={goal.timeline} colorClass="bg-magenta-500/10 text-magenta-300 border-magenta-500/20" />
-                </div>
-                <div className="glass-recessed px-5 py-3 rounded-2xl border border-white/5 text-center shadow-lg">
-                  <span className="text-3xl font-display font-bold text-white leading-none">{goal.current}</span>
-                  <div className="text-[11px] font-display text-zinc-500 uppercase tracking-widest mt-1">/ {goal.target}</div>
-                </div>
-              </div>
-              
-              <div className="h-4 glass-recessed rounded-full overflow-hidden p-[1px] mb-8 shadow-[inset_0_4px_8px_rgba(0,0,0,1)]">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 relative ${isComplete ? 'bg-magenta-500' : 'bg-gradient-to-r from-blue-500 to-magenta-500'}`}
-                  style={{ width: `${Math.min(100, progress)}%` }}
-                >
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] opacity-60" />
-                </div>
-              </div>
-
-              <Primary3DButton 
-                disabled={isComplete}
-                onClick={() => {
-                  if (!isComplete) {
-                    setGoals(goals.map((g: any) => g.id === goal.id ? { ...g, current: g.current + 1, lastDone: getLocalDateStr(), lastDoneTime: Date.now() } : g));
-                    addXP(25);
-                  }
-                }}
+      <motion.div layout className="space-y-6">
+        <AnimatePresence initial={false}>
+          {goals.map((goal: any) => {
+            const progress = (goal.current / goal.target) * 100;
+            const isComplete = goal.current >= goal.target;
+            return (
+              <motion.div
+                layout
+                key={goal.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
               >
-                {isComplete ? "Milestone Cleared" : "Deploy Action"}
-              </Primary3DButton>
-            </SpatialCard>
-          )
-        })}
-      </div>
+                <SpatialCard padding="p-8" className="border-t border-t-magenta-500/30">
+                  <div className="flex justify-between items-start mb-8">
+                    <div>
+                      <h3 className="text-white font-display font-bold text-2xl leading-tight mb-2">{goal.title}</h3>
+                      <Badge text={goal.timeline} colorClass="bg-magenta-500/10 text-magenta-300 border-magenta-500/20" />
+                    </div>
+                    <div className="glass-recessed px-5 py-3 rounded-2xl border border-white/5 text-center shadow-lg">
+                      <span className="text-3xl font-display font-bold text-white leading-none">{goal.current}</span>
+                      <div className="text-[11px] font-display text-zinc-500 uppercase tracking-widest mt-1">/ {goal.target}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="h-4 glass-recessed rounded-full overflow-hidden p-[1px] mb-8 shadow-[inset_0_4px_8px_rgba(0,0,0,1)]">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 relative ${isComplete ? 'bg-magenta-500' : 'bg-gradient-to-r from-blue-500 to-magenta-500'}`}
+                      style={{ width: `${Math.min(100, progress)}%` }}
+                    >
+                      <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] opacity-60" />
+                    </div>
+                  </div>
+
+                  <Primary3DButton 
+                    disabled={isComplete}
+                    onClick={() => {
+                      if (!isComplete) {
+                        setGoals(goals.map((g: any) => g.id === goal.id ? { ...g, current: g.current + 1, lastDone: getLocalDateStr(), lastDoneTime: Date.now() } : g));
+                        addXP(25);
+                      }
+                    }}
+                  >
+                    {isComplete ? "Milestone Cleared" : "Deploy Action"}
+                  </Primary3DButton>
+                </SpatialCard>
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
@@ -1410,17 +1495,27 @@ const NotesTab = ({ notes, setNotes, showToast }: any) => {
         <Primary3DButton onClick={saveNote}>Preserve Record</Primary3DButton>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar space-y-5 pt-4">
+      <motion.div layout className="flex-1 overflow-y-auto no-scrollbar space-y-5 pt-4">
         <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Archived</h2>
         {notes.length === 0 && <p className="text-zinc-600 text-[14px] px-2 font-body">Vault is empty.</p>}
-        {notes.map((note: any) => (
-          <div key={note.id} className="glass-card p-6 border-t border-t-amber-500/30 hover:scale-[1.02] transition-transform">
-            {note.title && <h3 className="text-white font-display font-bold text-xl mb-3">{note.title}</h3>}
-            <p className="text-zinc-300 text-[15px] font-body leading-relaxed whitespace-pre-wrap">{note.content}</p>
-            <div className="mt-6 text-[10px] font-display font-bold text-amber-500/80 uppercase tracking-widest bg-amber-500/10 w-max px-3 py-1 rounded-md">{note.date}</div>
-          </div>
-        ))}
-      </div>
+        <AnimatePresence initial={false}>
+          {notes.map((note: any) => (
+            <motion.div 
+              layout
+              key={note.id} 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="glass-card p-6 border-t border-t-amber-500/30 hover:scale-[1.02] transition-transform"
+            >
+              {note.title && <h3 className="text-white font-display font-bold text-xl mb-3">{note.title}</h3>}
+              <p className="text-zinc-300 text-[15px] font-body leading-relaxed whitespace-pre-wrap">{note.content}</p>
+              <div className="mt-6 text-[10px] font-display font-bold text-amber-500/80 uppercase tracking-widest bg-amber-500/10 w-max px-3 py-1 rounded-md">{note.date}</div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
@@ -1953,64 +2048,108 @@ export default function App() {
           
           {/* Main Scrollable Area */}
           <main className="flex-1 overflow-y-auto no-scrollbar px-6 pt-14">
-            {activeTab === 'Dashboard' && (
-              <DashboardTab 
-                userData={appData.profile} 
-                tasks={appData.tasks} 
-                setTasks={(tasks: any) => updateAppData((draft: any) => { draft.tasks = typeof tasks === 'function' ? tasks(draft.tasks) : tasks; })} 
-                addXP={addXP} 
-                buff1={buff1}
-                buff2={buff2}
-                claimCustomBuff={claimCustomBuff}
-                timeBurn={timeBurn}
-                dailyProgressPct={dailyProgressPct}
-                goals={appData.goals}
-                setGoals={(goals: any) => updateAppData((draft: any) => { draft.goals = typeof goals === 'function' ? goals(draft.goals) : goals; })}
-                showToast={showToast}
-                executeTask={executeTask}
-              />
-            )}
-            {activeTab === 'Tasks' && (
-              <TasksTab 
-                tasks={appData.tasks} 
-                setTasks={(tasks: any) => updateAppData((draft: any) => { draft.tasks = typeof tasks === 'function' ? tasks(draft.tasks) : tasks; })} 
-                addXP={addXP} 
-                goals={appData.goals}
-                executeTask={executeTask}
-              />
-            )}
-            {activeTab === 'Goals' && (
-              <GoalsTab 
-                goals={appData.goals} 
-                setGoals={(goals: any) => updateAppData((draft: any) => { draft.goals = typeof goals === 'function' ? goals(draft.goals) : goals; })} 
-                addXP={addXP} 
-              />
-            )}
-            {activeTab === 'Notes' && (
-              <NotesTab 
-                notes={appData.notes} 
-                setNotes={(notes: any) => updateAppData((draft: any) => { draft.notes = typeof notes === 'function' ? notes(draft.notes) : notes; })} 
-                showToast={showToast} 
-              />
-            )}
-            {activeTab === 'Stats' && (
-              <StatsTab 
-                userData={appData.profile} 
-                habits={appData.habits} 
-                showToast={showToast}
-                handleExport={handleExport} 
-                fileInputRef={fileInputRef} 
-                handleImport={handleImport}
-                currentTheme={currentTheme}
-                changeTheme={changeTheme}
-                yieldRange={yieldRange}
-                setYieldRange={setYieldRange}
-                yieldData={yieldData}
-                maxYieldXP={maxYieldXP}
-                rgbTheme={rgbTheme}
-                updateProfile={(fields: any) => updateAppData((draft: any) => { draft.profile = { ...draft.profile, ...fields }; })}
-              />
-            )}
+            <AnimatePresence mode="wait">
+              {activeTab === 'Dashboard' && (
+                <motion.div
+                  key="Dashboard"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                >
+                  <DashboardTab 
+                    userData={appData.profile} 
+                    tasks={appData.tasks} 
+                    setTasks={(tasks: any) => updateAppData((draft: any) => { draft.tasks = typeof tasks === 'function' ? tasks(draft.tasks) : tasks; })} 
+                    addXP={addXP} 
+                    buff1={buff1}
+                    buff2={buff2}
+                    claimCustomBuff={claimCustomBuff}
+                    timeBurn={timeBurn}
+                    dailyProgressPct={dailyProgressPct}
+                    goals={appData.goals}
+                    setGoals={(goals: any) => updateAppData((draft: any) => { draft.goals = typeof goals === 'function' ? goals(draft.goals) : goals; })}
+                    showToast={showToast}
+                    executeTask={executeTask}
+                  />
+                </motion.div>
+              )}
+              {activeTab === 'Tasks' && (
+                <motion.div
+                  key="Tasks"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="h-full flex flex-col"
+                >
+                  <TasksTab 
+                    tasks={appData.tasks} 
+                    setTasks={(tasks: any) => updateAppData((draft: any) => { draft.tasks = typeof tasks === 'function' ? tasks(draft.tasks) : tasks; })} 
+                    addXP={addXP} 
+                    goals={appData.goals}
+                    executeTask={executeTask}
+                  />
+                </motion.div>
+              )}
+              {activeTab === 'Goals' && (
+                <motion.div
+                  key="Goals"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                >
+                  <GoalsTab 
+                    goals={appData.goals} 
+                    setGoals={(goals: any) => updateAppData((draft: any) => { draft.goals = typeof goals === 'function' ? goals(draft.goals) : goals; })} 
+                    addXP={addXP} 
+                  />
+                </motion.div>
+              )}
+              {activeTab === 'Notes' && (
+                <motion.div
+                  key="Notes"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="h-full flex flex-col"
+                >
+                  <NotesTab 
+                    notes={appData.notes} 
+                    setNotes={(notes: any) => updateAppData((draft: any) => { draft.notes = typeof notes === 'function' ? notes(draft.notes) : notes; })} 
+                    showToast={showToast} 
+                  />
+                </motion.div>
+              )}
+              {activeTab === 'Stats' && (
+                <motion.div
+                  key="Stats"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                >
+                  <StatsTab 
+                    userData={appData.profile} 
+                    habits={appData.habits} 
+                    showToast={showToast}
+                    handleExport={handleExport} 
+                    fileInputRef={fileInputRef} 
+                    handleImport={handleImport}
+                    currentTheme={currentTheme}
+                    changeTheme={changeTheme}
+                    yieldRange={yieldRange}
+                    setYieldRange={setYieldRange}
+                    yieldData={yieldData}
+                    maxYieldXP={maxYieldXP}
+                    rgbTheme={rgbTheme}
+                    updateProfile={(fields: any) => updateAppData((draft: any) => { draft.profile = { ...draft.profile, ...fields }; })}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </main>
 
           {/* Dynamic Island Floating Bottom Navigation Dock */}
@@ -2024,34 +2163,41 @@ export default function App() {
                   // Make the middle item (Goals/Target) the prominent CTA button
                   if (tab.id === 'Goals') {
                     return (
-                      <button
+                      <motion.button
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-magenta-600 text-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.5)] mx-2 hover:scale-110 active:scale-95 transition-all relative z-20 border border-white/30"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-magenta-600 text-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.5)] mx-2 relative z-20 border border-white/30"
                       >
                         <Icon size={28} />
-                      </button>
+                      </motion.button>
                     )
                   }
 
                   return (
-                    <button
+                    <motion.button
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex flex-col items-center justify-center p-3.5 rounded-full transition-all duration-400 relative overflow-hidden group ${
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`flex flex-col items-center justify-center p-3.5 rounded-full relative overflow-hidden group ${
                         isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
                       }`}
                     >
                       {isActive && (
-                        <div className="absolute inset-0 bg-white/10 rounded-full" />
+                        <motion.div 
+                          layoutId="activeTabBackground"
+                          className="absolute inset-0 bg-white/10 rounded-full" 
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
                       )}
                       <div className={`relative ${isActive ? 'scale-110' : 'scale-100'} transition-transform duration-400 z-10`}>
                         <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
