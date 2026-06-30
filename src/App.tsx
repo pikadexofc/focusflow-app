@@ -1375,9 +1375,9 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
       <h1 className="text-4xl font-display font-bold text-white px-2 tracking-tighter">System</h1>
       
       <SpatialCard padding="p-8" className="flex flex-col items-center text-center gap-6 border-t border-t-lime-500/40">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 via-green-500 to-blue-600 p-[3px] shadow-xl" style={{ borderColor: currentTheme }}>
-          <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
-            <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-lime-400 to-blue-500">{userData.codename?.charAt(0) || 'U'}</span>
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 via-green-500 to-blue-600 shadow-xl relative" style={{ borderColor: currentTheme }}>
+          <div className="absolute inset-[3px] bg-black rounded-full flex items-center justify-center">
+            <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-lime-400 to-blue-500 leading-none select-none">{userData.codename?.charAt(0) || 'U'}</span>
           </div>
         </div>
         <div>
