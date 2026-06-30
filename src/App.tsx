@@ -744,14 +744,14 @@ const Onboarding = ({ onComplete }: any) => {
         {/* Screen 13: The Future */}
         {step === 12 && (
           <div className="flex-1 flex flex-col justify-center items-center text-center">
-            <div className="w-24 h-24 glass-card rounded-[2rem] flex items-center justify-center animate-float mb-8 animate-cinematic">
+            <div className="w-20 h-20 glass-card rounded-[1.5rem] flex items-center justify-center animate-float mb-4 animate-cinematic">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-magenta-500/20" />
-              <Moon size={40} className="text-white relative z-10" />
+              <Moon size={36} className="text-white relative z-10" />
             </div>
-            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic delay-1000">Now imagine yourself years from today.</h2>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">If things stay the same, those habits will still be running your life, what might that life look like?</p>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-3000">Remember, big changes come from small steps over time.</p>
-            <p className="text-xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-emerald-500 mb-12 animate-cinematic delay-4000 drop-shadow-lg">The door isn’t closed on you: you can start changing course today. You’re exactly where you need to be.</p>
+            <h2 className="text-2xl font-display font-bold text-white mb-3 animate-cinematic delay-1000">Now imagine yourself years from today.</h2>
+            <p className="text-[14px] font-body font-light text-zinc-400 mb-3 animate-cinematic delay-2000 leading-relaxed max-w-[320px]">If things stay the same, those habits will still be running your life, what might that life look like?</p>
+            <p className="text-[14px] font-body font-light text-zinc-400 mb-4 animate-cinematic delay-3000 leading-relaxed max-w-[320px]">Remember, big changes come from small steps over time.</p>
+            <p className="text-[15px] font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-emerald-500 mb-20 animate-cinematic delay-4000 drop-shadow-lg leading-relaxed max-w-[300px] mx-auto">The door isn’t closed on you: you can start changing course today. You’re exactly where you need to be.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-5000">
               <TactileButton onClick={handleNext}>Step Forward</TactileButton>
             </div>
