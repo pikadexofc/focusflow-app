@@ -141,10 +141,10 @@ body::before {
   animation: appEntry 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes drawWidth { from { width: 0%; } to { width: var(--target-w); } }
-@keyframes drawHeight { from { height: 0%; } to { height: var(--target-h); } }
-.animate-draw-w { animation: drawWidth 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-draw-h { animation: drawHeight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes drawWidth { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes drawHeight { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.animate-draw-w { animation: drawWidth 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; transform-origin: left; }
+.animate-draw-h { animation: drawHeight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; transform-origin: bottom; }
 
 @keyframes shootOut {
   0% { transform: translate(0,0) scale(0.5); opacity: 1; }

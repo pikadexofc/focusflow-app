@@ -58,24 +58,26 @@ export const Primary3DButton = ({ children, onClick, className = '', disabled = 
 
 export const SegmentedControl3D = ({ options, selected, onChange }: any) => (
   <div className="flex p-1 glass-recessed rounded-[1.25rem] relative w-full">
-    {options.map((opt: any) => (
-      <button
-        key={opt.id} type="button" onClick={() => onChange(opt.id)}
-        className={`flex-1 py-2.5 text-[12px] font-display font-semibold rounded-xl transition-all duration-400 z-10 relative ${
-          selected === opt.id ? 'text-black drop-shadow-sm' : 'text-zinc-500 hover:text-white'
-        }`}
-      >
-        {opt.label}
-      </button>
-    ))}
-    <motion.div 
-      className="absolute top-1 bottom-1 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.15)] z-0"
-      animate={{
-        width: `calc(${100 / options.length}% - 4px)`,
-        left: `calc(${options.findIndex((o: any) => o.id === selected) * (100 / options.length)}% + 2px)`
-      }}
-      transition={{ type: "spring", stiffness: 350, damping: 28 }}
-    />
+    {options.map((opt: any) => {
+      const isActive = selected === opt.id;
+      return (
+        <button
+          key={opt.id} type="button" onClick={() => onChange(opt.id)}
+          className={`flex-1 py-2.5 text-[12px] font-display font-semibold rounded-xl transition-all duration-400 z-10 relative ${
+            isActive ? 'text-black drop-shadow-sm' : 'text-zinc-500 hover:text-white'
+          }`}
+        >
+          {isActive && (
+            <motion.div 
+              layoutId="activeSegment"
+              className="absolute inset-0 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.15)] z-0" 
+              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+            />
+          )}
+          <span className="relative z-10">{opt.label}</span>
+        </button>
+      );
+    })}
   </div>
 );
 

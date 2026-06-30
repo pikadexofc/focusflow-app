@@ -145,64 +145,65 @@ export const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, c
               </div>
               <div>
                  <h4 className="font-display text-[14px] font-bold text-white mb-2 leading-tight">{b.data?.title || 'Daily Buff'}</h4>
-                 <button 
-                   type="button"
-                   disabled={isClaimed}
-                   onClick={(e) => claimCustomBuff(b.key, b.data, e)} 
-                   className={`w-full py-2 rounded-xl text-[10px] font-display font-bold uppercase tracking-widest transition-all ${
-                     isClaimed 
-                       ? 'bg-white/5 text-zinc-600 cursor-not-allowed' 
-                       : 'bg-white/10 text-white hover:bg-white/20 active:scale-95'
-                   }`}
-                 >
-                   {isClaimed ? 'Claimed' : 'Activate'}
-                 </button>
-              </div>
-            </SpatialCard>
-          );
-        })}
-      </div>
-
-      <div>
-        <h2 className="text-[12px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mb-4">Action Queue</h2>
-        {queueItems.length === 0 ? (
-          <div className="glass-recessed p-10 rounded-[2rem] text-center text-zinc-500 font-body text-sm border border-white/[0.02]">
-            Queue is clear. Rest or deploy.
-          </div>
-        ) : (
-          <motion.div layout className="space-y-4">
-            <AnimatePresence initial={false}>
-              {queueItems.sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority)).slice(0, 3).map((item: any) => (
-                <motion.div 
-                  layout
-                  key={item.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" 
-                  style={{borderLeftColor: item.type === 'goal' ? '#a855f7' : item.priority === 'high' ? '#ff00ff' : item.priority === 'medium' ? '#00f0ff' : 'transparent'}}
-                >
-                  <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    type="button" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (item.type === 'task') {
-                        executeTask(item.original, e);
-                      } else {
-                        setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr, lastDoneTime: Date.now() } : g));
-                        playSound('streak');
-                        addXP(25);
-                        showToast(`Milestone progress: ${item.original.current + 1}/${item.original.target}`);
-                      }
-                    }}
+                  <button 
+                    type="button"
+                    disabled={isClaimed}
+                    onClick={(e) => claimCustomBuff(b.key, b.data, e)} 
+                    className={`w-full h-11 rounded-xl text-[10px] font-display font-bold uppercase tracking-widest transition-all flex items-center justify-center ${
+                      isClaimed 
+                        ? 'bg-white/5 text-zinc-600 cursor-not-allowed' 
+                        : 'bg-white/10 text-white hover:bg-white/20 active:scale-95'
+                    }`}
                   >
-                    <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-7 h-7" />
-                  </motion.button>
+                    {isClaimed ? 'Claimed' : 'Activate'}
+                  </button>
+               </div>
+             </SpatialCard>
+           );
+         })}
+       </div>
+ 
+       <div>
+         <h2 className="text-[12px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mb-4">Action Queue</h2>
+         {queueItems.length === 0 ? (
+           <div className="glass-recessed p-10 rounded-[2rem] text-center text-zinc-500 font-body text-sm border border-white/[0.02]">
+             Queue is clear. Rest or deploy.
+           </div>
+         ) : (
+           <motion.div layout className="space-y-4">
+             <AnimatePresence initial={false}>
+               {queueItems.sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority)).slice(0, 3).map((item: any) => (
+                 <motion.div 
+                   layout
+                   key={item.id}
+                   initial={{ opacity: 0, y: 15 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, scale: 0.95 }}
+                   transition={{ duration: 0.2 }}
+                   whileHover={{ scale: 1.01 }}
+                   whileTap={{ scale: 0.99 }}
+                   className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" 
+                   style={{borderLeftColor: item.type === 'goal' ? '#a855f7' : item.priority === 'high' ? '#ff00ff' : item.priority === 'medium' ? '#00f0ff' : 'transparent'}}
+                 >
+                   <motion.button 
+                     whileHover={{ scale: 1.1 }}
+                     whileTap={{ scale: 0.9 }}
+                     type="button" 
+                     className="w-11 h-11 flex items-center justify-center -ml-2 -my-2"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       if (item.type === 'task') {
+                         executeTask(item.original, e);
+                       } else {
+                         setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr, lastDoneTime: Date.now() } : g));
+                         playSound('streak');
+                         addXP(25);
+                         showToast(`Milestone progress: ${item.original.current + 1}/${item.original.target}`);
+                       }
+                     }}
+                   >
+                     <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-7 h-7" />
+                   </motion.button>
                   <div className="flex-1">
                     <p className="text-white font-body text-[16px] font-medium leading-tight">{item.title}</p>
                   </div>

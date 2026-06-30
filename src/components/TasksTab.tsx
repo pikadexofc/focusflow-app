@@ -50,14 +50,14 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
         
         <div className="space-y-3 mb-4">
           <div className="flex gap-2 items-center">
-            <input type="date" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-300 text-xs font-display outline-none focus:border-blue-500/40" />
-            <input type="time" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-300 text-xs font-display outline-none focus:border-blue-500/40" />
+            <input type="date" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} className="flex-1 px-3 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-300 text-xs font-display outline-none focus:border-blue-500/40 h-11" />
+            <input type="time" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} className="flex-1 px-3 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-300 text-xs font-display outline-none focus:border-blue-500/40 h-11" />
           </div>
 
           <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar">
-            <button type="button" onClick={() => setTaskGoalId('')} className={`px-3 py-2 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border ${taskGoalId === '' ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>No Objective</button>
+            <button type="button" onClick={() => setTaskGoalId('')} className={`px-4 py-2.5 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border h-9 flex items-center ${taskGoalId === '' ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>No Objective</button>
             {goals.map((g: any) => (
-              <button key={g.id} type="button" onClick={() => setTaskGoalId(g.id)} className={`px-3 py-2 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border ${taskGoalId === g.id ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>
+              <button key={g.id} type="button" onClick={() => setTaskGoalId(g.id)} className={`px-4 py-2.5 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border h-9 flex items-center ${taskGoalId === g.id ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>
                 {g.title}
               </button>
             ))}
@@ -105,6 +105,7 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
                     whileTap={{ scale: 0.9 }}
                     type="button" 
                     onClick={(e) => executeTask(task, e)}
+                    className="w-11 h-11 flex items-center justify-center -ml-2 -my-2"
                   >
                     <Circle className="text-zinc-600 group-hover:text-blue-400 transition-colors w-7 h-7" />
                   </motion.button>
@@ -135,7 +136,7 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
                 whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={() => setTasks(tasks.filter((t: any) => !t.completed))}
-                className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400/60 hover:text-red-400 transition-colors bg-red-500/0 hover:bg-red-500/10 px-3 py-1.5 rounded-lg"
+                className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400/60 hover:text-red-400 transition-colors bg-red-500/0 hover:bg-red-500/10 px-4 py-2.5 rounded-xl h-9 flex items-center"
               >
                 Clear All
               </motion.button>
