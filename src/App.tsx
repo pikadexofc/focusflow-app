@@ -1136,12 +1136,35 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [goalTarget, setGoalTarget] = useState<any>(30);
   const [timeline, setTimeline] = useState('Daily');
-  const [customTimeline, setCustomTimeline] = useState('');
+  const [customValue, setCustomValue] = useState<number>(3);
+  const [customUnit, setCustomUnit] = useState<string>('Hours');
   const [isCustomTimeline, setIsCustomTimeline] = useState(false);
 
   const handleAddGoal = () => {
     if (!newGoalTitle.trim()) return;
-    const finalTimeline = isCustomTimeline ? (customTimeline.trim() || 'Custom') : timeline;
+    
+    let finalTimeline = timeline;
+    let frequencyValue = 1;
+    let frequencyUnit = 'day';
+
+    if (isCustomTimeline) {
+      const unitSingular = customUnit === 'Hours' ? 'hour' : 'day';
+      frequencyValue = customValue;
+      frequencyUnit = unitSingular;
+      finalTimeline = `Every ${customValue} ${customUnit}`;
+    } else {
+      if (timeline === 'Daily') {
+        frequencyValue = 1;
+        frequencyUnit = 'day';
+      } else if (timeline === 'Weekly') {
+        frequencyValue = 1;
+        frequencyUnit = 'week';
+      } else if (timeline === 'Monthly') {
+        frequencyValue = 1;
+        frequencyUnit = 'month';
+      }
+    }
+
     const safeTarget = Math.max(1, parseInt(goalTarget) || 1);
     setGoals([{
       id: Date.now(),
@@ -1149,13 +1172,16 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
       timeline: finalTimeline,
       target: safeTarget,
       current: 0,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      frequencyValue,
+      frequencyUnit
     }, ...goals]);
     setNewGoalTitle('');
     setGoalTarget(30);
     setTimeline('Daily');
     setIsCustomTimeline(false);
-    setCustomTimeline('');
+    setCustomValue(3);
+    setCustomUnit('Hours');
   };
 
   return (
@@ -1196,26 +1222,33 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
         </div>
 
         {isCustomTimeline && (
-          <div className="mb-4 space-y-2 animate-cinematic">
+          <div className="mb-4 space-y-3 animate-cinematic">
             <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest block">Custom Frequency</span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-zinc-400 font-body">Every</span>
               <input 
-                type="text" 
-                placeholder="e.g. Hourly, Yearly, Bi-weekly..." 
-                className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-white text-xs font-body outline-none focus:border-magenta-500/40"
-                value={customTimeline}
-                onChange={(e) => setCustomTimeline(e.target.value)}
+                type="number" 
+                min="1" 
+                className="w-16 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-white text-xs font-bold text-center outline-none focus:border-magenta-500/40"
+                value={customValue}
+                onChange={(e) => setCustomValue(Math.max(1, parseInt(e.target.value) || 1))}
               />
-              {['Hourly', 'Yearly'].map(preset => (
-                <button 
-                  key={preset} 
-                  type="button" 
-                  onClick={() => setCustomTimeline(preset)} 
-                  className="px-3 py-2 rounded-xl text-[10px] font-display font-bold bg-white/5 border border-white/10 text-zinc-400 hover:text-white transition-colors"
-                >
-                  {preset}
-                </button>
-              ))}
+              <div className="flex p-1 bg-black/40 border border-white/10 rounded-xl">
+                {['Hours', 'Days'].map(unit => (
+                  <button
+                    key={unit}
+                    type="button"
+                    onClick={() => setCustomUnit(unit)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-display font-bold uppercase transition-colors ${
+                      customUnit === unit 
+                        ? 'bg-magenta-500 text-white' 
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    {unit}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
