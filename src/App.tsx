@@ -444,7 +444,7 @@ const Onboarding = ({ onComplete }: any) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setTimeout(() => {
-      setStep(s => s + 1);
+      setStep(s => (s === 6 && habits.length === 0) ? 11 : s + 1);
       setIsTransitioning(false);
     }, 1000); 
   };
@@ -870,7 +870,7 @@ const Onboarding = ({ onComplete }: any) => {
 // 4. MAIN APP TABS (UI Upgraded, Logic Intact)
 // ============================================================================
 
-const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCustomBuff, timeBurn, dailyProgressPct, goals = [], setGoals, showToast }: any) => {
+const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCustomBuff, timeBurn, dailyProgressPct, goals = [], setGoals, showToast, executeTask }: any) => {
   const curDateStr = getLocalDateStr();
 
   // Helper functions for date/schedule checks
@@ -1044,9 +1044,7 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCus
                 <button type="button" onClick={(e) => {
                   e.stopPropagation();
                   if (item.type === 'task') {
-                    setTasks(tasks.map((t: any) => t.id === item.original.id ? { ...t, completed: true } : t));
-                    playSound('complete');
-                    addXP(getTaskWeight(item.priority) * 10);
+                    executeTask(item.original, e);
                   } else {
                     setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr, lastDoneTime: Date.now() } : g));
                     playSound('streak');
@@ -1807,6 +1805,15 @@ export default function App() {
       task.completedAt = Date.now();
       draft.profile.score += xp;
       draft.profile.xpLogs[getLocalDateStr()] = (draft.profile.xpLogs[getLocalDateStr()] || 0) + xp;
+
+      if (task.goalId) {
+        const goal = draft.goals.find((g: any) => g.id == task.goalId);
+        if (goal && goal.current < goal.target) {
+          goal.current += 1;
+          goal.lastDone = getLocalDateStr();
+          goal.lastDoneTime = Date.now();
+        }
+      }
     });
 
     setProcessingTasks(prev => { const s = new Set(prev); s.delete(p.id); return s; });
@@ -1960,6 +1967,7 @@ export default function App() {
                 goals={appData.goals}
                 setGoals={(goals: any) => updateAppData((draft: any) => { draft.goals = typeof goals === 'function' ? goals(draft.goals) : goals; })}
                 showToast={showToast}
+                executeTask={executeTask}
               />
             )}
             {activeTab === 'Tasks' && (
