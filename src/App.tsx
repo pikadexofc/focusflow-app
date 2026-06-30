@@ -431,6 +431,8 @@ const Onboarding = ({ onComplete }: any) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   const [name, setName] = useState('');
+  const [directive, setDirective] = useState('Survive one more day');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [inputText, setInputText] = useState('');
   const [habits, setHabits] = useState<any[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
@@ -461,7 +463,7 @@ const Onboarding = ({ onComplete }: any) => {
         title: `Exploration: ${habits.find(h => h.id === selectedHabitId)?.text || 'Reflection'}`,
         content: deepDiveText
       } : null;
-      onComplete({ name: name || 'User', habits, goals, deepDiveNote });
+      onComplete({ name: name || 'User', habits, goals, deepDiveNote, directive, avatarUrl });
     }, 1000);
   };
 
@@ -497,22 +499,74 @@ const Onboarding = ({ onComplete }: any) => {
 
         {/* Screen 3: Identity */}
         {step === 2 && (
-          <div className="flex-1 flex flex-col pt-10">
-            <h2 className="text-3xl font-display font-bold text-white mb-4 animate-cinematic">What would you like to be called here?</h2>
-            <p className="text-sm font-body text-zinc-400 mb-10 animate-cinematic delay-500">(You can use your name, a nickname, or anything you like.)</p>
-            <div className="animate-cinematic delay-1000">
-              <div className="glass-card p-2 mb-8 group border border-white/[0.05] focus-within:border-blue-500/30 transition-colors">
-                <div className="bg-black/40 rounded-[1.5rem] p-4 relative overflow-hidden">
+          <div className="flex-1 flex flex-col pt-6 overflow-y-auto no-scrollbar pb-10">
+            <h2 className="text-3xl font-display font-bold text-white mb-2 animate-cinematic">Identity Setup</h2>
+            <p className="text-sm font-body text-zinc-400 mb-8 animate-cinematic delay-500">Establish your profile within FocusFlow.</p>
+            
+            <div className="animate-cinematic delay-700 space-y-6">
+              {/* Profile Pic Upload */}
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-magenta-600 p-[2px] shadow-lg shrink-0 overflow-hidden relative flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span className="font-display font-bold text-xl text-white">{name?.charAt(0) || 'U'}</span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-display font-bold text-zinc-500 uppercase tracking-widest">Profile Picture</span>
+                  <label className="cursor-pointer bg-white/5 border border-white/10 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-widest transition-all">
+                    Choose Photo
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event: any) => {
+                            setAvatarUrl(event.target.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Codename Input */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-display font-bold text-zinc-500 uppercase tracking-widest block">What would you like to be called?</label>
+                <div className="glass-card p-1.5 border border-white/[0.04] focus-within:border-blue-500/30 transition-colors">
                   <input 
-                    type="text" placeholder="Your name..."
-                    className="w-full bg-transparent text-white text-2xl outline-none font-display placeholder:text-zinc-700 relative z-10"
-                    value={name} onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && name.trim() && handleNext()}
+                    type="text" 
+                    placeholder="Your name..."
+                    className="w-full bg-transparent text-white px-3 py-2 outline-none font-display text-lg placeholder:text-zinc-700"
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)}
                   />
                 </div>
               </div>
-              <Primary3DButton onClick={handleNext} disabled={!name.trim()}>Continue</Primary3DButton>
-              <p className="text-center text-xs text-zinc-500 mt-6 font-body animate-cinematic delay-1500">This space is yours, and you can always change it later.</p>
+
+              {/* Core Goal / Directive Input */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-display font-bold text-zinc-500 uppercase tracking-widest block">Your Core Goal / Directive</label>
+                <div className="glass-card p-1.5 border border-white/[0.04] focus-within:border-blue-500/30 transition-colors">
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Survive one more day..."
+                    className="w-full bg-transparent text-white px-3 py-2 outline-none font-body text-sm placeholder:text-zinc-600"
+                    value={directive} 
+                    onChange={(e) => setDirective(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Primary3DButton onClick={handleNext} disabled={!name.trim()}>Continue</Primary3DButton>
+              </div>
             </div>
           </div>
         )}
@@ -898,12 +952,16 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCus
     <div className="space-y-6 pb-32 animate-cinematic">
       <header className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-[1.25rem] bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-lg border border-white/20">
-            <span className="font-display font-bold text-2xl text-white drop-shadow-md">{userData.codename?.charAt(0) || 'U'}</span>
+          <div className="w-14 h-14 rounded-[1.25rem] bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-lg border border-white/20 overflow-hidden">
+            {userData.avatarUrl ? (
+              <img src={userData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-display font-bold text-2xl text-white drop-shadow-md">{userData.codename?.charAt(0) || 'U'}</span>
+            )}
           </div>
           <div>
-            <h1 className="text-2xl font-display font-bold text-white leading-none tracking-tight">Agent {userData.codename}</h1>
-            <p className="text-[10px] font-display text-blue-400 uppercase tracking-widest mt-1.5 font-bold">Survive one more day</p>
+            <h1 className="text-2xl font-display font-bold text-white leading-none tracking-tight">{userData.codename}</h1>
+            <p className="text-[10px] font-display text-blue-400 uppercase tracking-widest mt-1.5 font-bold">{userData.directive || 'Survive one more day'}</p>
           </div>
         </div>
         <div className="glass-recessed px-5 py-3 rounded-[1.5rem] border border-blue-500/20 shadow-md text-center min-w-[80px]">
@@ -1369,15 +1427,19 @@ const NotesTab = ({ notes, setNotes, showToast }: any) => {
   );
 };
 
-const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, handleImport, currentTheme, changeTheme, yieldRange, setYieldRange, yieldData, maxYieldXP, rgbTheme }: any) => {
+const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, handleImport, currentTheme, changeTheme, yieldRange, setYieldRange, yieldData, maxYieldXP, rgbTheme, updateProfile }: any) => {
   return (
     <div className="space-y-6 pb-32 animate-cinematic">
       <h1 className="text-4xl font-display font-bold text-white px-2 tracking-tighter">System</h1>
       
       <SpatialCard padding="p-8" className="flex flex-col items-center text-center gap-6 border-t border-t-lime-500/40">
         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 via-green-500 to-blue-600 shadow-xl relative" style={{ borderColor: currentTheme }}>
-          <div className="absolute inset-[3px] bg-black rounded-full flex items-center justify-center">
-            <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-lime-400 to-blue-500 leading-none select-none">{userData.codename?.charAt(0) || 'U'}</span>
+          <div className="absolute inset-[3px] bg-black rounded-full flex items-center justify-center overflow-hidden">
+            {userData.avatarUrl ? (
+              <img src={userData.avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+            ) : (
+              <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-lime-400 to-blue-500 leading-none select-none">{userData.codename?.charAt(0) || 'U'}</span>
+            )}
           </div>
         </div>
         <div>
@@ -1401,6 +1463,64 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
                 style={{ backgroundColor: color }} 
               />
            ))}
+         </div>
+      </div>
+
+      {/* Profile Settings */}
+      <div className="glass-card p-6 border-t border-t-zinc-800 space-y-4">
+         <span className="text-[11px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest block">Profile Settings</span>
+         <div className="space-y-4">
+           {/* Edit Core Goal */}
+           <div className="space-y-1.5">
+             <label className="text-[10px] font-display font-bold text-zinc-500 uppercase tracking-widest block">Core Goal / Directive</label>
+             <div className="glass-recessed rounded-xl p-3 border border-white/[0.02]">
+               <input 
+                 type="text" 
+                 className="w-full bg-transparent text-white text-sm outline-none font-body placeholder:text-zinc-600"
+                 placeholder="Survive one more day..."
+                 value={userData.directive || ''}
+                 onChange={(e) => updateProfile({ directive: e.target.value })}
+               />
+             </div>
+           </div>
+
+           {/* Edit Profile Pic */}
+           <div className="space-y-1.5">
+             <label className="text-[10px] font-display font-bold text-zinc-500 uppercase tracking-widest block">Profile Picture</label>
+             <div className="flex gap-3 items-center">
+               <label className="cursor-pointer bg-white/5 border border-white/10 hover:bg-white/10 text-white px-4 py-2.5 rounded-xl text-xs font-display font-bold uppercase tracking-widest transition-all">
+                 Upload Image
+                 <input 
+                   type="file" 
+                   accept="image/*" 
+                   className="hidden" 
+                   onChange={(e: any) => {
+                     const file = e.target.files?.[0];
+                     if (file) {
+                       const reader = new FileReader();
+                       reader.onload = (event: any) => {
+                         updateProfile({ avatarUrl: event.target.result });
+                         showToast("Profile picture updated");
+                       };
+                       reader.readAsDataURL(file);
+                     }
+                   }}
+                 />
+               </label>
+               {userData.avatarUrl && (
+                 <button 
+                   type="button" 
+                   onClick={() => {
+                     updateProfile({ avatarUrl: '' });
+                     showToast("Profile picture removed");
+                   }}
+                   className="bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-4 py-2.5 rounded-xl text-xs font-display font-bold uppercase tracking-widest transition-all"
+                 >
+                   Remove
+                 </button>
+               )}
+             </div>
+           </div>
          </div>
       </div>
 
@@ -1762,6 +1882,8 @@ export default function App() {
             updateAppData((draft: any) => {
               draft.profile.booted = true;
               draft.profile.codename = data.name || 'User';
+              draft.profile.directive = data.directive || 'Survive one more day';
+              draft.profile.avatarUrl = data.avatarUrl || '';
               draft.profile.joinedAt = Date.now();
               draft.habits = data.habits || [];
               draft.goals = (data.goals || []).map((g: any) => ({
@@ -1878,6 +2000,7 @@ export default function App() {
                 yieldData={yieldData}
                 maxYieldXP={maxYieldXP}
                 rgbTheme={rgbTheme}
+                updateProfile={(fields: any) => updateAppData((draft: any) => { draft.profile = { ...draft.profile, ...fields }; })}
               />
             )}
           </main>
