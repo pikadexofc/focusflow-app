@@ -198,12 +198,12 @@ export const InjectedStyles = () => (
     }
     
     @keyframes spatialReveal { 
-      0% { opacity: 0; transform: translateY(15px) scale(0.97); } 
-      100% { opacity: 1; transform: translateY(0) scale(1); } 
+      0% { opacity: 0; transform: translateY(15px) scale(0.97); filter: blur(10px); } 
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
     }
     @keyframes spatialHide { 
-      0% { opacity: 1; transform: translateY(0) scale(1); } 
-      100% { opacity: 0; transform: translateY(-15px) scale(0.97); } 
+      0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
+      100% { opacity: 0; transform: translateY(-15px) scale(0.97); filter: blur(10px); } 
     }
 
     .animate-float { animation: float 8s ease-in-out infinite; }
@@ -471,6 +471,31 @@ export default function App() {
     });
   };
 
+  const currentTheme = appData?.profile?.theme || '#00f0ff';
+  const yieldData = React.useMemo(() => getYieldData(yieldRange), [appData?.profile?.xpLogs, yieldRange]);
+  const maxYieldXP = React.useMemo(() => Math.max(...Object.values(appData?.profile?.xpLogs || {}).map(v => Number(v)), 100), [appData?.profile?.xpLogs]);
+  const rgbTheme = React.useMemo(() => hexToRgb(currentTheme), [currentTheme]);
+
+  // Compute execution progress for today
+  const curDateStr = getLocalDateStr();
+  const todayTasks = React.useMemo(() => (appData?.tasks || []).filter((t: any) => t.deadline === curDateStr || (!t.completed && t.deadline < curDateStr)), [appData?.tasks, curDateStr]);
+  const dailyProgressPct = React.useMemo(() => {
+    const totalWeight = todayTasks.reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
+    const completedWeight = todayTasks.filter((t: any) => t.completed).reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
+    return totalWeight === 0 ? 0 : (completedWeight / totalWeight) * 100;
+  }, [todayTasks]);
+
+  const buff1 = React.useMemo(() => appData?.profile?.customBuffs?.buff1 || { title: 'Extra Effort', xp: 100, lastClaimed: '' }, [appData?.profile?.customBuffs?.buff1]);
+  const buff2 = React.useMemo(() => appData?.profile?.customBuffs?.buff2 || { title: 'Perfect Day', xp: 100, lastClaimed: '' }, [appData?.profile?.customBuffs?.buff2]);
+
+  const tabs = [
+    { id: 'Dashboard', icon: BarChart2 },
+    { id: 'Tasks', icon: CheckCircle2 },
+    { id: 'Goals', icon: Target },
+    { id: 'Notes', icon: FileText },
+    { id: 'Stats', icon: Sliders },
+  ];
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#030303] flex items-center justify-center">
@@ -517,31 +542,6 @@ export default function App() {
       </div>
     );
   }
-
-  const currentTheme = appData?.profile?.theme || '#00f0ff';
-  const yieldData = React.useMemo(() => getYieldData(yieldRange), [appData?.profile?.xpLogs, yieldRange]);
-  const maxYieldXP = React.useMemo(() => Math.max(...Object.values(appData?.profile?.xpLogs || {}).map(v => Number(v)), 100), [appData?.profile?.xpLogs]);
-  const rgbTheme = React.useMemo(() => hexToRgb(currentTheme), [currentTheme]);
-
-  // Compute execution progress for today
-  const curDateStr = getLocalDateStr();
-  const todayTasks = React.useMemo(() => (appData?.tasks || []).filter((t: any) => t.deadline === curDateStr || (!t.completed && t.deadline < curDateStr)), [appData?.tasks, curDateStr]);
-  const dailyProgressPct = React.useMemo(() => {
-    const totalWeight = todayTasks.reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
-    const completedWeight = todayTasks.filter((t: any) => t.completed).reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
-    return totalWeight === 0 ? 0 : (completedWeight / totalWeight) * 100;
-  }, [todayTasks]);
-
-  const buff1 = React.useMemo(() => appData?.profile?.customBuffs?.buff1 || { title: 'Extra Effort', xp: 100, lastClaimed: '' }, [appData?.profile?.customBuffs?.buff1]);
-  const buff2 = React.useMemo(() => appData?.profile?.customBuffs?.buff2 || { title: 'Perfect Day', xp: 100, lastClaimed: '' }, [appData?.profile?.customBuffs?.buff2]);
-
-  const tabs = [
-    { id: 'Dashboard', icon: BarChart2 },
-    { id: 'Tasks', icon: CheckCircle2 },
-    { id: 'Goals', icon: Target },
-    { id: 'Notes', icon: FileText },
-    { id: 'Stats', icon: Sliders },
-  ];
 
   return (
     <ErrorBoundary>
