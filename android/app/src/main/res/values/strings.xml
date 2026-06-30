@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FocusFlow</string>
+    <string name="title_activity_main">FocusFlow</string>
+    <string name="package_name">com.pikadexofc.focusflow</string>
+    <string name="custom_url_scheme">com.pikadexofc.focusflow</string>
+</resources>

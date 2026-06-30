@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles } from 'lucide-react';
+import { Shield, Sparkles, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Badge, Primary3DButton } from './CommonUI';
 
@@ -11,6 +11,11 @@ export const NotesTab = ({ notes, setNotes, showToast }: any) => {
     setNotes([{ id: Date.now(), ...newNote, date: new Date().toLocaleDateString() }, ...notes]);
     setNewNote({ title: '', content: '' });
     showToast("Record preserved.");
+  };
+
+  const deleteNote = (id: number) => {
+    setNotes(notes.filter((n: any) => n.id !== id));
+    showToast("Record removed.");
   };
 
   return (
@@ -52,9 +57,18 @@ export const NotesTab = ({ notes, setNotes, showToast }: any) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="glass-card p-6 border-t border-t-amber-500/30 hover:scale-[1.02] transition-transform"
+              className="glass-card p-6 border-t border-t-amber-500/30 hover:scale-[1.02] transition-transform relative group"
             >
-              {note.title && <h3 className="text-white font-display font-bold text-xl mb-3">{note.title}</h3>}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                type="button"
+                onClick={() => deleteNote(note.id)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-500/0 group-hover:bg-red-500/10 flex items-center justify-center text-zinc-600 group-hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 size={14} />
+              </motion.button>
+              {note.title && <h3 className="text-white font-display font-bold text-xl mb-3 pr-10">{note.title}</h3>}
               <p className="text-zinc-300 text-[15px] font-body leading-relaxed whitespace-pre-wrap">{note.content}</p>
               <div className="mt-6 text-[10px] font-display font-bold text-amber-500/80 uppercase tracking-widest bg-amber-500/10 w-max px-3 py-1 rounded-md">{note.date}</div>
             </motion.div>

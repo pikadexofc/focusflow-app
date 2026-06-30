@@ -198,12 +198,12 @@ export const InjectedStyles = () => (
     }
     
     @keyframes spatialReveal { 
-      0% { opacity: 0; transform: translateY(15px) scale(0.97); filter: blur(10px); } 
-      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
+      0% { opacity: 0; transform: translateY(15px) scale(0.97); } 
+      100% { opacity: 1; transform: translateY(0) scale(1); } 
     }
     @keyframes spatialHide { 
-      0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
-      100% { opacity: 0; transform: translateY(-15px) scale(0.97); filter: blur(10px); } 
+      0% { opacity: 1; transform: translateY(0) scale(1); } 
+      100% { opacity: 0; transform: translateY(-15px) scale(0.97); } 
     }
 
     .animate-float { animation: float 8s ease-in-out infinite; }
@@ -219,6 +219,10 @@ export const InjectedStyles = () => (
     .delay-2000 { animation-delay: 2000ms; }
     .delay-2500 { animation-delay: 2500ms; }
     .delay-3000 { animation-delay: 3000ms; }
+    .delay-3500 { animation-delay: 3500ms; }
+    .delay-4000 { animation-delay: 4000ms; }
+    .delay-4500 { animation-delay: 4500ms; }
+    .delay-5000 { animation-delay: 5000ms; }
 
     /* Utilities */
     .no-scrollbar::-webkit-scrollbar { display: none; }

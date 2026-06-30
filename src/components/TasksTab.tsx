@@ -128,7 +128,18 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
 
         {completedTasks.length > 0 && (
           <div className="space-y-4 opacity-50">
-            <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Cleared</h2>
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase">Cleared</h2>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                type="button"
+                onClick={() => setTasks(tasks.filter((t: any) => !t.completed))}
+                className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400/60 hover:text-red-400 transition-colors bg-red-500/0 hover:bg-red-500/10 px-3 py-1.5 rounded-lg"
+              >
+                Clear All
+              </motion.button>
+            </div>
             <motion.div layout className="space-y-4">
               <AnimatePresence initial={false}>
                 {completedTasks.map((task: any) => (
