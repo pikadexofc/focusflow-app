@@ -1,7 +1,25 @@
 {
-  "name": "react-example",
+  "name": "focusflow-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A high-performance, mobile-first, offline-first personal productivity engine designed for absolute focus, tasks, and metrics. Local-first storage with zero cloud dependence.",
+  "keywords": [
+    "local-first",
+    "offline-first",
+    "productivity",
+    "react-19",
+    "vite",
+    "tailwind-v4",
+    "capacitor",
+    "mobile-first",
+    "focus",
+    "personal-finance",
+    "super-productivity",
+    "tasks",
+    "habits",
+    "pwa"
+  ],
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",

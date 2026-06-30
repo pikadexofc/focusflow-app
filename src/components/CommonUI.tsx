@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'motion/react';
 
 interface BadgeProps {
@@ -21,16 +21,74 @@ interface SpatialCardProps {
   showOrbs?: boolean;
 }
 
-export const SpatialCard = ({ children, className = '', padding = 'p-6' }: SpatialCardProps) => (
-  <motion.div 
-    whileHover={{ y: -2, transition: { duration: 0.2 } }}
-    className={`glass-card ${className}`}
-  >
-    <div className={`relative z-10 ${padding}`}>
-      {children}
-    </div>
-  </motion.div>
-);
+export const SpatialCard = ({ children, className = '', padding = 'p-6' }: SpatialCardProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.setProperty('--mouse-x', `${x}px`);
+    card.style.setProperty('--mouse-y', `${y}px`);
+  };
+
+  return (
+    <motion.div 
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className={`glass-card group relative overflow-hidden ${className}`}
+    >
+      {/* Subtle mouse spotlight */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"
+        style={{
+          background: 'radial-gradient(200px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.04), transparent 80%)'
+        }}
+      />
+      
+      {/* Decorative subtle background geometric elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+        {/* Floating subtle vector line */}
+        <motion.div 
+          className="absolute -top-10 -left-10 w-24 h-24 rounded-full border border-white/[0.02] pointer-events-none"
+          animate={{ 
+            y: [0, -3, 0],
+            x: [0, 1.5, 0]
+          }}
+          transition={{ 
+            duration: 8, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+        />
+        {/* Decorative crosshair in the corner */}
+        <div className="absolute top-3 right-3 text-white/[0.04] font-mono text-[8px] tracking-tighter">
+          +
+        </div>
+        {/* Another floating subtle vector shape */}
+        <motion.div 
+          className="absolute -bottom-8 -right-8 w-20 h-20 rounded-full border border-dashed border-white/[0.015] pointer-events-none"
+          animate={{ 
+            y: [0, 4, 0],
+            x: [0, -2, 0]
+          }}
+          transition={{ 
+            duration: 10, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+        />
+      </div>
+
+      <div className={`relative z-10 ${padding}`}>
+        {children}
+      </div>
+    </motion.div>
+  );
+};
 
 export const TactileButton = ({ children, onClick, className = '', disabled = false }: any) => (
   <motion.button 

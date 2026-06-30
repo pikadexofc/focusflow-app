@@ -1,17 +1,26 @@
 # 🌌 FocusFlow
 
+<div align="center">
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript: 5.8](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![React: 19](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
 [![TailwindCSS: v4](https://img.shields.io/badge/TailwindCSS-v4-blue.svg)](https://tailwindcss.com/)
 [![Capacitor: 8](https://img.shields.io/badge/Capacitor-8-orange.svg)](https://capacitorjs.com/)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployment-brightgreen.svg)](https://focusflow-app-chi.vercel.app)
 
-A high-performance, local-first personal productivity engine designed for absolute focus. Engineered with a premium, low-friction dark interface, tactile feedback transitions, strict local data privacy, and optimized CPU schedules.
+**A high-performance, local-first personal productivity engine designed for absolute focus.**  
+*Engineered with a premium, low-friction dark interface, tactile feedback transitions, local-first data privacy, and optimized CPU schedules.*
+
+[✨ Live Demo](https://focusflow-app-chi.vercel.app) • [🛠️ Setup Guide](#-running-locally) • [📦 Production Build](#-production-compilation) • [🎯 Roadmap](#-project-roadmap)
+
+</div>
 
 ---
 
 ## 🎨 Philosophy & Design
 FocusFlow operates under the core belief that productivity systems should be **low-overhead, local, and calm**. 
+
 * **Zero Cloud Leakage**: Your data resides strictly in local storage. It is never transmitted, processed, or profiled.
 * **Premium Tactile Interfaces**: High-fidelity GPU-composited animations (`transform` and `opacity` only) maintain a consistent 60 FPS profile.
 * **The 80/20 Aesthetic**: 80% clean, minimal space; 20% high-fidelity premium moments. No glowing shadow resource bloat.
@@ -54,8 +63,10 @@ FocusFlow operates under the core belief that productivity systems should be **l
 * npm
 
 ### 1. Installation
-Clone the repository and install the production dependencies:
+Clone the repository and install the dependencies:
 ```bash
+git clone https://github.com/pikadexofc/focusflow-app.git
+cd focusflow-app
 npm install
 ```
 
@@ -92,6 +103,16 @@ The static assets will be compiled directly to the `dist/` directory, optimized 
 
 ---
 
+## ❓ FAQ & Developer Q&A
+
+**Q: Where is my data saved?**  
+A: All data is serialized and saved in local storage under the `focusflow_v1` key. It never leaves your device.
+
+**Q: Why React 19 and Tailwind CSS v4?**  
+A: To leverage Vite 6's optimized ES module compilation and compile smaller distribution bundles.
+
+---
+
 ## 📄 License & Attribution
 This project is open-source and licensed under the [MIT License](LICENSE).
-Portions of the initial layout boilerplate were generated via Google AI Studio templates. All customized features, performance patches, memoization refactorings, and modular component specifications were developed manually.
+Portions of the initial layout boilerplate were generated via open templates. All customized features, performance patches, memoization refactorings, and modular component specifications were developed manually.
