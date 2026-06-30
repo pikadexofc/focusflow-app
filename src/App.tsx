@@ -816,9 +816,66 @@ const Onboarding = ({ onComplete }: any) => {
 // 4. MAIN APP TABS (UI Upgraded, Logic Intact)
 // ============================================================================
 
-const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCustomBuff, timeBurn, dailyProgressPct }: any) => {
-  const activeTasks = tasks.filter((t: any) => !t.completed);
+const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCustomBuff, timeBurn, dailyProgressPct, goals = [], setGoals, showToast }: any) => {
   const curDateStr = getLocalDateStr();
+
+  // Helper functions for date/schedule checks
+  const isSameWeek = (dateStr1: string, dateStr2: string) => {
+    if (!dateStr1 || !dateStr2) return false;
+    const d1 = new Date(dateStr1);
+    const d2 = new Date(dateStr2);
+    const getStartOfWeek = (d: Date) => {
+      const day = d.getDay();
+      const diff = d.getDate() - day;
+      const start = new Date(d);
+      start.setDate(diff);
+      return start.toDateString();
+    };
+    return getStartOfWeek(d1) === getStartOfWeek(d2);
+  };
+
+  const isSameMonth = (dateStr1: string, dateStr2: string) => {
+    if (!dateStr1 || !dateStr2) return false;
+    const d1 = new Date(dateStr1);
+    const d2 = new Date(dateStr2);
+    return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
+  };
+
+  const activeTasks = tasks.filter((t: any) => !t.completed);
+
+  // Deployed goals that are not fully completed, and are due according to timeline/schedule
+  const activeGoals = goals.filter((g: any) => {
+    if (g.current >= g.target) return false; // Fully achieved
+    if (!g.lastDone) return true; // Never done, so it is due
+    if (g.timeline === 'Daily') {
+      return g.lastDone !== curDateStr;
+    }
+    if (g.timeline === 'Weekly') {
+      return !isSameWeek(g.lastDone, curDateStr);
+    }
+    if (g.timeline === 'Monthly') {
+      return !isSameMonth(g.lastDone, curDateStr);
+    }
+    return true;
+  });
+
+  // Map into unified Action Queue items list
+  const queueItems = [
+    ...activeTasks.map((t: any) => ({
+      id: `task-${t.id}`,
+      title: t.title,
+      type: 'task',
+      priority: t.priority,
+      original: t
+    })),
+    ...activeGoals.map((g: any) => ({
+      id: `goal-${g.id}`,
+      title: `${g.title} (${g.timeline})`,
+      type: 'goal',
+      priority: 'medium', // Default priority for goals
+      original: g
+    }))
+  ];
 
 
   return (
@@ -902,29 +959,36 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCus
 
       <div>
         <h2 className="text-[12px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mb-4">Action Queue</h2>
-        {activeTasks.length === 0 ? (
+        {queueItems.length === 0 ? (
           <div className="glass-recessed p-10 rounded-[2rem] text-center text-zinc-500 font-body text-sm border border-white/[0.02]">
             Queue is clear. Rest or deploy.
           </div>
         ) : (
           <div className="space-y-4">
-            {activeTasks.sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority)).slice(0, 3).map((task: any) => (
-              <div key={task.id} className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" style={{borderLeftColor: task.priority === 'high' ? '#ff00ff' : task.priority === 'medium' ? '#00f0ff' : 'transparent'}}>
+            {queueItems.sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority)).slice(0, 3).map((item: any) => (
+              <div key={item.id} className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" style={{borderLeftColor: item.type === 'goal' ? '#a855f7' : item.priority === 'high' ? '#ff00ff' : item.priority === 'medium' ? '#00f0ff' : 'transparent'}}>
                 <button type="button" onClick={(e) => {
                   e.stopPropagation();
-                  setTasks(tasks.map((t: any) => t.id === task.id ? { ...t, completed: true } : t));
-                  playSound('complete');
-                  addXP(getTaskWeight(task.priority) * 10);
+                  if (item.type === 'task') {
+                    setTasks(tasks.map((t: any) => t.id === item.original.id ? { ...t, completed: true } : t));
+                    playSound('complete');
+                    addXP(getTaskWeight(item.priority) * 10);
+                  } else {
+                    setGoals(goals.map((g: any) => g.id === item.original.id ? { ...g, current: g.current + 1, lastDone: curDateStr } : g));
+                    playSound('streak');
+                    addXP(25);
+                    showToast(`Milestone progress: ${item.original.current + 1}/${item.original.target}`);
+                  }
                 }}>
                   <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-7 h-7" />
                 </button>
                 <div className="flex-1">
-                  <p className="text-white font-body text-[16px] font-medium leading-tight">{task.title}</p>
+                  <p className="text-white font-body text-[16px] font-medium leading-tight">{item.title}</p>
                 </div>
               </div>
             ))}
-            {activeTasks.length > 3 && (
-              <p className="text-center text-[10px] font-display text-zinc-500 mt-4 uppercase tracking-widest bg-black/40 rounded-full py-2.5 w-max mx-auto px-5 border border-white/5">+{activeTasks.length - 3} more tasks</p>
+            {queueItems.length > 3 && (
+              <p className="text-center text-[10px] font-display text-zinc-500 mt-4 uppercase tracking-widest bg-black/40 rounded-full py-2.5 w-max mx-auto px-5 border border-white/5">+{queueItems.length - 3} more actions</p>
             )}
           </div>
         )}
@@ -1145,7 +1209,7 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
                 disabled={isComplete}
                 onClick={() => {
                   if (!isComplete) {
-                    setGoals(goals.map((g: any) => g.id === goal.id ? { ...g, current: g.current + 1 } : g));
+                    setGoals(goals.map((g: any) => g.id === goal.id ? { ...g, current: g.current + 1, lastDone: getLocalDateStr() } : g));
                     addXP(25);
                   }
                 }}
@@ -1678,6 +1742,9 @@ export default function App() {
                 claimCustomBuff={claimCustomBuff}
                 timeBurn={timeBurn}
                 dailyProgressPct={dailyProgressPct}
+                goals={appData.goals}
+                setGoals={(goals: any) => updateAppData((draft: any) => { draft.goals = typeof goals === 'function' ? goals(draft.goals) : goals; })}
+                showToast={showToast}
               />
             )}
             {activeTab === 'Tasks' && (
