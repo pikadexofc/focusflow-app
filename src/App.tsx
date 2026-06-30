@@ -1,1051 +1,1242 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  Clock, Zap, Target, Database, BarChart3, CheckCircle2, Circle, 
-  Lock, LayoutGrid, Calendar, User, Flame, Loader2, Sparkles, Check, ArrowRight, Shield, Plus, Edit2, Save, X, Download, Upload
+  CheckCircle2, Circle, Plus, 
+  Target, FileText, BarChart2, Download, Upload,
+  Shield, ArrowRight, Moon, Pickaxe, Heart, Sliders,
+  Sparkles, Zap, Layers, ChevronRight
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 
-const STORAGE_KEY = 'focusflow_v1';
-
-const loadData = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-const saveData = (data: any) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-};
-
-// --- CORE DESIGN TOKENS ---
-const TOKENS = {
-  bgBase: '#050508', 
-  solarOrange: '#FF5A00',
-  royalAmethyst: '#8B5CF6',
-  cyanGlow: '#00E5FF',
-};
-
-// --- ERROR BOUNDARY ---
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  errorMsg: string;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) { 
-    super(props); 
-    this.state = { hasError: false, errorMsg: '' }; 
-  }
-  static getDerivedStateFromError(error: Error) { 
-    return { hasError: true, errorMsg: error.message }; 
-  }
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) { 
-    console.error("FocusFlow Critical Error:", error, errorInfo); 
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 text-white text-center font-heading">
-          <Shield size={48} className="text-[#FF5A00] mb-4 opacity-50" />
-          <h1 className="text-2xl font-bold mb-2">System Interruption</h1>
-          <p className="text-[#A1A1AA] text-sm mb-6 max-w-xs">An unexpected anomaly occurred in the atmospheric engine. Please reboot the environment.</p>
-          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-white/10 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-white/20 transition-all">Reboot Core</button>
-        </div>
-      );
+// ============================================================================
+// 1. GLOBAL STYLES & ANIMATIONS (Premium Commercial Design System)
+// ============================================================================
+export const InjectedStyles = () => (
+  <style dangerouslySetInnerHTML={{__html: `
+    :root {
+      --bg-dark: #030303;
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-bg: rgba(15, 15, 15, 0.45);
+      --glass-highlight: rgba(255, 255, 255, 0.05);
+      
+      /* Premium Commercial Palette */
+      --glow-blue: #00f0ff;
+      --glow-violet: #6366f1;
+      --glow-magenta: #ff00ff;
+      --glow-lime: #ccff00;
+      --glow-amber: #ffaa00;
+      --glow-pink: #ec4899;
     }
-    return this.props.children;
-  }
-}
 
-// --- UTILITIES ---
-let audioCtx: AudioContext | null = null;
-const initAudio = () => {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-  }
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-};
+    body {
+      background-color: var(--bg-dark);
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
-const playSound = (type: 'boot' | 'complete' | 'streak') => {
-  try {
-    initAudio();
-    if (!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    const now = audioCtx.currentTime;
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-body { font-family: 'Outfit', sans-serif; }
+    .font-script { font-family: 'Yellowtail', cursive; }
+
+    /* Premium 3D Glassmorphism */
+    .glass-card {
+      background: linear-gradient(145deg, rgba(30, 30, 30, 0.6) 0%, rgba(10, 10, 10, 0.8) 100%);
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.8);
+      border-right: 1px solid rgba(0, 0, 0, 0.6);
+      box-shadow: 
+        0 30px 60px -15px rgba(0, 0, 0, 1), 
+        0 10px 20px -5px rgba(0, 0, 0, 0.8),
+        inset 0 1px 2px rgba(255, 255, 255, 0.1);
+      border-radius: 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
     
-    if (type === 'boot') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(110, now);
-      osc.frequency.exponentialRampToValueAtTime(440, now + 0.5);
-      gainNode.gain.setValueAtTime(0.1, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      osc.start(now); osc.stop(now + 0.5);
-    } else if (type === 'complete') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(880, now);
-      osc.frequency.exponentialRampToValueAtTime(440, now + 0.1);
-      gainNode.gain.setValueAtTime(0.05, now);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-      osc.start(now); osc.stop(now + 0.1);
-    } else if (type === 'streak') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(220, now);
-      osc.frequency.setValueAtTime(440, now + 0.1); 
-      osc.frequency.setValueAtTime(880, now + 0.2); 
-      gainNode.gain.setValueAtTime(0.1, now);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.4);
-      osc.start(now); osc.stop(now + 0.4);
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.08) 0%, transparent 60%);
+      pointer-events: none;
     }
-  } catch (e) { console.error("Audio error skipped"); }
-};
 
-const getOrdinal = (n: number) => {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-};
+    .glass-recessed {
+      background: rgba(0, 0, 0, 0.5);
+      border-top: 1px solid rgba(0, 0, 0, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 
+        inset 0 6px 15px rgba(0, 0, 0, 0.8),
+        inset 0 2px 4px rgba(0, 0, 0, 0.6);
+    }
 
-const format12Hour = (timeStr: string) => {
-  if (!timeStr) return '';
-  const [h, m] = timeStr.split(':');
-  const hours = parseInt(h, 10);
-  const suffix = hours >= 12 ? 'PM' : 'AM';
-  const hours12 = hours % 12 || 12;
-  return `${hours12}:${m} ${suffix}`;
-};
+    /* Glossy & Tactile Buttons */
+    .btn-tactile {
+      background: linear-gradient(180deg, rgba(45, 45, 45, 0.5) 0%, rgba(15, 15, 15, 0.8) 100%);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.9);
+      box-shadow: 
+        0 10px 20px -5px rgba(0, 0, 0, 0.8),
+        inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-tactile:hover:not(:disabled) {
+      background: linear-gradient(180deg, rgba(60, 60, 60, 0.6) 0%, rgba(20, 20, 20, 0.9) 100%);
+      box-shadow: 
+        0 15px 25px -5px rgba(0, 0, 0, 0.9),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+    .btn-tactile:active:not(:disabled) {
+      transform: translateY(1px) scale(0.98);
+      background: rgba(10, 10, 10, 0.9);
+      border-top-color: rgba(0, 0, 0, 0.8);
+      box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.9);
+    }
 
-const getLocalDateStr = (d = new Date()) => {
-  const offset = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - offset).toISOString().split('T')[0];
-};
+    .btn-primary-3d {
+      background: linear-gradient(180deg, var(--glow-blue) 0%, var(--glow-violet) 100%);
+      color: #ffffff;
+      border-top: 1px solid rgba(255,255,255,0.6);
+      border-bottom: 2px solid rgba(0,0,0,0.4);
+      box-shadow: 
+        0 15px 35px -5px rgba(99, 102, 241, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.6),
+        inset 0 -2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .btn-primary-3d:hover:not(:disabled) {
+      background: linear-gradient(180deg, #4ade80 0%, var(--glow-lime) 100%);
+      color: #000;
+      border-top: 1px solid #d9f99d;
+      box-shadow: 
+        0 20px 40px -5px rgba(132, 204, 22, 0.4),
+        0 8px 20px rgba(0, 0, 0, 0.6);
+      transform: translateY(-2px);
+      text-shadow: none;
+    }
+    .btn-primary-3d:active:not(:disabled) {
+      transform: translateY(2px) scale(0.98);
+      border-bottom: 0px solid transparent;
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
 
-const hexToRgb = (hex: string) => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 90, 0';
-};
+    /* Oversized Text Gradients */
+    .text-gradient {
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+    .gradient-cyan-blue { background-image: linear-gradient(to right, var(--glow-blue), var(--glow-violet)); }
+    .gradient-magenta-orange { background-image: linear-gradient(to right, var(--glow-magenta), var(--glow-amber)); }
+    .gradient-lime-emerald { background-image: linear-gradient(to right, var(--glow-lime), #10b981); }
 
-// --- COMPONENTS ---
+    /* Animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(1.5deg); }
+    }
+    @keyframes drift {
+      0% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+    
+    @keyframes spatialReveal { 
+      0% { opacity: 0; transform: translateY(15px) scale(0.97); filter: blur(10px); } 
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
+    }
+    @keyframes spatialHide { 
+      0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
+      100% { opacity: 0; transform: translateY(-15px) scale(0.97); filter: blur(10px); } 
+    }
 
-const AnimatedNumber = ({ value }: { value: number }) => {
-  const [displayValue, setDisplayValue] = useState(0);
-  
-  useEffect(() => {
-    let startTimestamp: number | null = null;
-    const end = Number(value) || 0;
-    const duration = 2000;
+    .animate-float { animation: float 8s ease-in-out infinite; }
+    .animate-drift { animation: drift 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); }
+    
+    .animate-cinematic { animation: spatialReveal 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+    .animate-cinematic-out { animation: spatialHide 1s cubic-bezier(0.8, 0, 0.8, 0.2) forwards; }
 
-    let frameId: number;
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setDisplayValue(Math.floor(easeProgress * end));
-      if (progress < 1) frameId = window.requestAnimationFrame(step);
-      else setDisplayValue(end);
-    };
-    frameId = window.requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frameId);
-  }, [value]);
+    /* Delays */
+    .delay-500 { animation-delay: 500ms; }
+    .delay-1000 { animation-delay: 1000ms; }
+    .delay-1500 { animation-delay: 1500ms; }
+    .delay-2000 { animation-delay: 2000ms; }
+    .delay-2500 { animation-delay: 2500ms; }
+    .delay-3000 { animation-delay: 3000ms; }
 
-  return <>{displayValue.toLocaleString()}</>;
-};
+    /* Utilities */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+  `}} />
+);
 
-const RayCard = ({ children, className = "", onClick = undefined }: { children: React.ReactNode, className?: string, onClick?: (e: React.MouseEvent) => void, key?: any }) => (
+// ============================================================================
+// 2. ELITE UI COMPONENTS
+// ============================================================================
+
+interface GlowingOrbProps {
+  color: string;
+  size: string;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+const GlowingOrb = ({ color, size, className = '', style }: GlowingOrbProps) => (
   <div 
-    onClick={onClick}
-    className={`group relative rounded-[24px] overflow-hidden z-0 transition-transform duration-300 shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] ${onClick ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''} ${className}`}
-  >
-    <div 
-      className="absolute inset-0 rounded-[24px] pointer-events-none z-0 overflow-hidden"
-      style={{
-        padding: '1.5px',
-        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-        WebkitMaskComposite: 'xor',
-        mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-        maskComposite: 'exclude',
-      } as any}
-    >
-      <div className="absolute inset-[-100%] ray-slow"
-           style={{ background: 'conic-gradient(from 0deg, transparent 40%, var(--theme-color) 85%, transparent 100%)' }} />
-      <div className="absolute inset-[-100%] ray-fast"
-           style={{ background: 'conic-gradient(from 0deg, transparent 40%, var(--theme-color) 85%, transparent 100%)' }} />
-    </div>
+    className={`absolute rounded-full mix-blend-screen pointer-events-none animate-drift ${className}`}
+    style={{
+      width: size,
+      height: size,
+      background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+      filter: 'blur(70px)',
+      ...style
+    }}
+  />
+);
 
-    <div 
-      className="absolute inset-[1.5px] rounded-[22.5px] z-10 backdrop-blur-[24px]"
-      style={{ 
-        backgroundColor: 'rgba(18, 18, 22, 0.65)',
-        boxShadow: 'inset 0 1px 1px 0 rgba(255,255,255,0.05), inset 0 -10px 20px 0 rgba(0,0,0,0.5)',
-      }} 
-    />
-    
-    <div className="absolute inset-[1.5px] rounded-[22.5px] z-10 pointer-events-none mix-blend-screen opacity-[0.03] bg-gradient-to-br from-white/40 via-transparent to-[var(--theme-color)]" />
+interface BadgeProps {
+  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  text: string;
+  colorClass?: string;
+}
 
-    <div className={`relative z-20 h-full w-full flex flex-col ${className.includes('!p-') || className.includes('p-') ? '' : 'p-4'}`}>
+const Badge = ({ icon: Icon, text, colorClass = "from-zinc-800 to-zinc-900 text-zinc-300 border-white/10" }: BadgeProps) => (
+  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-display font-medium border shadow-lg bg-gradient-to-b backdrop-blur-md ${colorClass}`}>
+    {Icon && <Icon size={12} />}
+    <span>{text}</span>
+  </div>
+);
+
+interface SpatialCardProps {
+  children: React.ReactNode;
+  className?: string;
+  padding?: string;
+  showOrbs?: boolean;
+}
+
+const SpatialCard = ({ children, className = '', padding = 'p-6', showOrbs = false }: SpatialCardProps) => (
+  <div className={`glass-card ${className}`}>
+    {showOrbs && (
+      <>
+        <GlowingOrb color="rgba(0, 240, 255, 0.05)" size="150px" className="top-0 -left-10" />
+        <GlowingOrb color="rgba(255, 0, 255, 0.03)" size="200px" className="bottom-0 -right-10" />
+      </>
+    )}
+    <div className={`relative z-10 ${padding}`}>
       {children}
     </div>
   </div>
 );
 
-const SpatialButton = ({ children, onClick, type="button", icon: Icon = ArrowRight, className="" }: any) => (
-  <button type={type} onClick={onClick} className={`spatial-pill group ${className}`}>
-     <span className="spatial-pill-text">{children}</span>
-     <div className="spatial-pill-knob">
-        <Icon size={18} className="text-white" />
-     </div>
+const TactileButton = ({ children, onClick, className = '', disabled = false }) => (
+  <button disabled={disabled} onClick={onClick} className={`btn-tactile rounded-[1.25rem] py-3.5 px-4 font-display font-medium text-[14px] flex justify-center items-center gap-2 text-white/90 w-full ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}>
+    {children}
   </button>
 );
 
-const AnimatedProgressBar = ({ progress, label, val }: any) => (
-  <div className="w-full">
-    <div className="flex justify-between items-center mb-2">
-      <span className="text-[10px] text-[#A1A1AA] font-semibold tracking-wider uppercase">{label}</span>
-      <span className="text-[11px] font-heading text-white font-bold">{val}</span>
-    </div>
-    <div className="h-[6px] w-full bg-[rgba(0,0,0,0.4)] rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-[rgba(255,255,255,0.05)] relative">
-      <div 
-        className="h-full relative rounded-full animate-draw-w" 
-        style={{ 
-          '--target-w': `${Math.max(0, Math.min(progress || 0, 100))}%`,
-          background: `linear-gradient(90deg, ${TOKENS.royalAmethyst}, var(--theme-color))`
-        } as any}
+const Primary3DButton = ({ children, onClick, className = '', disabled = false }) => (
+  <button disabled={disabled} onClick={onClick} className={`btn-primary-3d rounded-[1.25rem] py-4 px-4 font-display font-bold text-[15px] flex justify-center items-center gap-2 w-full tracking-wide ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${className}`}>
+    {children}
+  </button>
+);
+
+const SegmentedControl3D = ({ options, selected, onChange }) => (
+  <div className="flex p-1 glass-recessed rounded-[1.25rem] relative w-full">
+    {options.map(opt => (
+      <button
+        key={opt.id} onClick={() => onChange(opt.id)}
+        className={`flex-1 py-2.5 text-[12px] font-display font-semibold rounded-xl transition-all duration-400 z-10 relative ${
+          selected === opt.id ? 'text-black drop-shadow-sm' : 'text-zinc-500 hover:text-white'
+        }`}
       >
-         {progress > 0 && (
-           <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-md z-10" />
-         )}
-      </div>
-    </div>
+        {opt.label}
+      </button>
+    ))}
+    <div 
+      className="absolute top-1 bottom-1 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(99,102,241,0.4),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.4)] transition-all duration-500 z-0"
+      style={{
+        width: `calc(${100 / options.length}% - 4px)`,
+        left: `calc(${options.findIndex(o => o.id === selected) * (100 / options.length)}% + 2px)`
+      }}
+    />
   </div>
 );
 
-const HeroRing = ({ progress, label, mainText, subText, size = 100 }: any) => {
-  const strokeWidth = 10;
-  const radius = (size - strokeWidth) / 2;
+const ProgressRing = ({ progress, size = 60, stroke = 6, label, gradientId = "ringGradPrimary" }) => {
+  const radius = (size - stroke) / 2;
   const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (Math.max(0, Math.min(progress || 0, 100)) / 100) * circumference;
+  const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="relative flex flex-col items-center justify-center">
-      <div style={{ width: size, height: size }} className="relative drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)]">
-        <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full transform -rotate-90">
-          <defs>
-            <linearGradient id={`ringGrad-${label}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={TOKENS.royalAmethyst} />
-              <stop offset="100%" stopColor="var(--theme-color)" />
-            </linearGradient>
-          </defs>
-          <circle cx={size / 2} cy={size / 2} r={radius} stroke="rgba(0,0,0,0.5)" strokeWidth={strokeWidth} fill="none" />
-          <circle cx={size / 2} cy={size / 2} r={radius} stroke="rgba(255,255,255,0.03)" strokeWidth={strokeWidth} fill="none" />
-          
-          <circle
-            cx={size / 2} cy={size / 2} r={radius} 
-            stroke={`url(#ringGrad-${label})`} strokeWidth={strokeWidth}
-            fill="none" strokeDasharray={circumference} strokeDashoffset={offset}
-            strokeLinecap="round" 
-            style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-heading font-black text-[24px] text-white leading-none tracking-tight">{mainText}</span>
-          <span className="font-heading text-[11px] text-[var(--theme-color)] font-bold mt-1 tracking-wider">{subText}</span>
-        </div>
+    <div className="flex flex-col items-center justify-center relative">
+      <svg width={size} height={size} className="transform -rotate-90 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+        <defs>
+          <linearGradient id="ringGradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00f0ff" />
+            <stop offset="100%" stopColor="#6366f1" />
+          </linearGradient>
+          <linearGradient id="ringGradAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffaa00" />
+            <stop offset="100%" stopColor="#ff00ff" />
+          </linearGradient>
+          <linearGradient id="ringGradLime" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ccff00" />
+            <stop offset="100%" stopColor="#10b981" />
+          </linearGradient>
+        </defs>
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="rgba(255,255,255,0.03)" strokeWidth={stroke} fill="none" />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius} stroke={`url(#${gradientId})`} strokeWidth={stroke} fill="none"
+          strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[11px] font-display font-bold text-white uppercase tracking-widest drop-shadow-md">{label}</span>
       </div>
-      <span className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-widest mt-3">{label}</span>
     </div>
   );
 };
 
-const GlassInput = (props: any) => (
-  <input
-    {...props}
-    className={`w-full px-5 py-4 rounded-[20px] bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] focus:border-[var(--theme-color)] outline-none text-white text-[12px] font-medium transition-all shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] placeholder:text-[#71717A] ${props.className || ''}`}
-  />
-);
-
-const CleanDateInput = ({ value, onChange }: any) => (
-  <input 
-    type="date" 
-    value={value} 
-    onChange={onChange} 
-    className="bg-white/5 border border-white/10 rounded-[12px] px-3 py-2.5 text-[11px] font-semibold text-white outline-none focus:border-[var(--theme-color)] transition-all cursor-pointer"
-  />
-);
-
-const CleanTimeInput = ({ value, onChange }: any) => (
-  <input 
-    type="time" 
-    value={value} 
-    onChange={onChange} 
-    className="bg-white/5 border border-white/10 rounded-[12px] px-3 py-2.5 text-[11px] font-semibold text-white outline-none focus:border-[var(--theme-color)] transition-all cursor-pointer"
-  />
-);
-
-const GlassSelect = (props: any) => (
-  <select
-    {...props}
-    className={`w-full px-5 py-4 rounded-[20px] bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] focus:border-[var(--theme-color)] outline-none text-white text-[12px] font-semibold uppercase tracking-wider transition-all appearance-none cursor-pointer shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] ${props.className || ''}`}
-  >
-    {props.children}
-  </select>
-);
-
-function AppContent() {
-  const [appData, setAppData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [toasts, setToasts] = useState<any[]>([]);
+// ============================================================================
+// 3. CINEMATIC ONBOARDING (16-Step Psychological Ritual from Document)
+// ============================================================================
+const Onboarding = ({ onComplete }) => {
+  const [step, setStep] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   
-  const [timeBurn, setTimeBurn] = useState({
-    day: { pct: 0, main: '0%', sub: '00:00' },
-    month: { pct: 0, main: '0%', sub: '1st' },
-    year: { pct: 0, main: '0%', sub: '1d' }
-  });
+  const [name, setName] = useState('');
+  const [inputText, setInputText] = useState('');
+  const [habits, setHabits] = useState([]);
+  const [goals, setGoals] = useState([]);
   
-  const [isBoosted, setIsBoosted] = useState(false);
-  const boostTimeout = useRef<any>(null);
-  const [particles, setParticles] = useState<any[]>([]);
-  const [processingTasks, setProcessingTasks] = useState(new Set());
+  const [selectedHabitId, setSelectedHabitId] = useState(null);
+  const [deepDiveText, setDeepDiveText] = useState('');
 
-  const curDateStr = getLocalDateStr();
-  const [taskPriority, setTaskPriority] = useState('High');
-  const [taskDeadline, setTaskDeadline] = useState(curDateStr);
-  const [taskTime, setTaskTime] = useState('');
-  const [taskGoalId, setTaskGoalId] = useState('');
-  
-  const [goalTimeline, setGoalTimeline] = useState('Daily');
-  const [goalTarget, setGoalTarget] = useState<any>(30);
-  const [yieldRange, setYieldRange] = useState('7d');
-  const [editingBuff, setEditingBuff] = useState<string | null>(null);
-  const [buffForm, setBuffForm] = useState({ title: '', xp: 100 });
-
-  const nextDate = new Date();
-  nextDate.setDate(nextDate.getDate() + 1);
-  const nextDateStr = getLocalDateStr(nextDate);
-
-  useEffect(() => {
-    const data = loadData();
-
-    if (data) {
-      setAppData(data);
-    } else {
-      const fresh = {
-        version: 1,
-        profile: { booted: false },
-        tasks: [],
-        goals: [],
-        notes: []
-      };
-      setAppData(fresh);
-      saveData(fresh);
-    }
-
-    setIsLoading(false);
-  }, []);
-
-  const updateAppData = (updater: any) => {
-    setAppData((prev: any) => {
-      const updated = structuredClone(prev);
-      updater(updated);
-      saveData(updated);
-      return updated;
-    });
+  const handleNext = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setStep(s => s + 1);
+      setIsTransitioning(false);
+    }, 1000); 
   };
 
-  useEffect(() => {
-    let timerId: any;
-    const scheduleUpdate = () => {
-      const now = new Date();
-      const curMin = now.getHours() * 60 + now.getMinutes();
-      const dayPct = (curMin / 1440) * 100;
-      const daysInMo = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      const moPct = ((now.getDate() - 1 + curMin/1440) / daysInMo) * 100;
-      const startOfYear = new Date(now.getFullYear(), 0, 0);
-      const diff = now.getTime() - startOfYear.getTime();
-      const exactDaysPassed = Math.floor(diff / (1000 * 60 * 60 * 24)) + (curMin / 1440);
-      const isLeap = (now.getFullYear() % 4 === 0 && now.getFullYear() % 100 !== 0) || now.getFullYear() % 400 === 0;
-      const yrPct = (exactDaysPassed / (isLeap ? 366 : 365)) * 100;
+  const addItem = (listSetter, list) => {
+    if (!inputText.trim()) return;
+    listSetter([{ id: Date.now(), text: inputText }, ...list]);
+    setInputText('');
+  };
 
-      setTimeBurn({ 
-        day: { pct: dayPct, main: `${Math.floor(dayPct)}%`, sub: now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' }) }, 
-        month: { pct: moPct, main: `${Math.floor(moPct)}%`, sub: getOrdinal(now.getDate()) }, 
-        year: { pct: yrPct, main: `${Math.floor(yrPct)}%`, sub: Math.floor(exactDaysPassed) + 'd' } 
-      });
-      timerId = setTimeout(scheduleUpdate, 60000);
-    };
-    scheduleUpdate();
-    return () => clearTimeout(timerId);
-  }, []);
+  const finishOnboarding = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      const deepDiveNote = deepDiveText.trim() ? {
+        title: `Exploration: ${habits.find(h => h.id === selectedHabitId)?.text || 'Reflection'}`,
+        content: deepDiveText
+      } : null;
+      onComplete({ name: name || 'User', habits, goals, deepDiveNote });
+    }, 1000);
+  };
 
-  const dashboardTasks = (appData?.tasks || []).filter((t: any) => 
-    (t.deadline <= curDateStr && t.status !== 'completed') || 
-    (t.status === 'completed' && t.completedDateStr === curDateStr)
+  return (
+    <div className="h-full flex flex-col px-8 pt-20 pb-16 relative z-10 overflow-hidden">
+      
+      {/* Ambient Onboarding Backgrounds */}
+      <GlowingOrb color="rgba(0, 240, 255, 0.15)" size="400px" className="top-0 -left-20" />
+      <GlowingOrb color="rgba(255, 0, 255, 0.1)" size="500px" className="bottom-0 -right-20 animate-drift" style={{ animationDelay: '-3s' }} />
+
+      <div key={step} className={`flex-1 flex flex-col relative z-10 ${isTransitioning ? 'animate-cinematic-out pointer-events-none' : ''}`}>
+        
+        {/* Screen 1: Welcome */}
+        {step === 0 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Hello, and welcome.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">The outside world can feel very loud.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Here, there’s no judgment and no hurry.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-3000">Take off your mask and relax. This is your space – you control it.</p>
+            <p className="text-sm font-body text-blue-400/80 animate-cinematic delay-4000">Feel free to pause or step away anytime.</p>
+            <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-5000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
+          </div>
+        )}
+
+        {/* Screen 2: The Shift */}
+        {step === 1 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Change often starts quietly.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">It doesn’t need to be loud or sudden.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-2000">First, let’s take a moment to be here now.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-cinematic delay-3000">We’ll slow down and breathe together.</p>
+            <div className="absolute bottom-6 w-full animate-cinematic delay-4000">
+              <TactileButton onClick={handleNext}>Take a breath</TactileButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 3: Identity */}
+        {step === 2 && (
+          <div className="flex-1 flex flex-col pt-10">
+            <h2 className="text-3xl font-display font-bold text-white mb-4 animate-cinematic">What would you like to be called here?</h2>
+            <p className="text-sm font-body text-zinc-400 mb-10 animate-cinematic delay-500">(You can use your name, a nickname, or anything you like.)</p>
+            <div className="animate-cinematic delay-1000">
+              <div className="glass-card p-2 mb-8 group border border-white/[0.05] focus-within:border-blue-500/30 transition-colors">
+                <div className="bg-black/40 rounded-[1.5rem] p-4 relative overflow-hidden">
+                  <input 
+                    type="text" placeholder="Your name..."
+                    className="w-full bg-transparent text-white text-2xl outline-none font-display placeholder:text-zinc-700 relative z-10"
+                    value={name} onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleNext()}
+                  />
+                </div>
+              </div>
+              <Primary3DButton onClick={handleNext}>Continue</Primary3DButton>
+              <p className="text-center text-xs text-zinc-500 mt-6 font-body animate-cinematic delay-1500">This space is yours, and you can always change it later.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 4: Privacy */}
+        {step === 3 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <div className="absolute top-10 right-0 animate-float opacity-50">
+              <Badge text="SECURE" icon={Shield} colorClass="bg-blue-900/40 border-blue-500/30 text-blue-300" />
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Nice to meet you, {name || 'there'}.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">This is your private space – you’re in complete control.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-2000">Everything you write stays on this device.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-lime-emerald animate-cinematic delay-3000">Nothing is ever sent to the cloud or shared. Your privacy is protected.</p>
+            <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-4000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
+          </div>
+        )}
+
+        {/* Screen 5: Metaphor */}
+        {step === 4 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Let’s try a different perspective.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Think of your mind as a hidden cave filled with treasures – ideas and strengths you haven’t discovered yet.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-2000">It might feel a little dark or unfamiliar. That’s okay.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-cinematic delay-3000">Together we’ll turn on a light and explore gently.</p>
+            <div className="absolute bottom-6 w-full animate-cinematic delay-4000">
+              <TactileButton onClick={handleNext}>Turn on the light</TactileButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 6: The Setup */}
+        {step === 5 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-2xl font-display font-bold text-white mb-6 animate-cinematic">Let’s begin by noting anything you’d like to change or let go of – without judging yourself.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">It could be a habit, a feeling, or something you avoid (procrastination, anger, worry, etc.).</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Don’t feel ashamed; everyone struggles with something.</p>
+            <p className="text-lg font-body font-medium text-amber-400/90 animate-cinematic delay-3000">Naming these things can actually make them feel lighter. Write quickly and honestly, without overthinking.</p>
+            <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-4000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
+          </div>
+        )}
+
+        {/* Screen 7: Extraction Input */}
+        {step === 6 && (
+          <div className="flex-1 flex flex-col h-full animate-cinematic pt-6">
+            <h2 className="text-2xl font-display font-bold text-white mb-2">Just let your thoughts flow.</h2>
+            <p className="text-sm font-body text-zinc-400 mb-2">Write whatever comes to mind about habits or behaviors you want to change.</p>
+            <p className="text-xs font-body text-blue-400/80 mb-6">This is private, so no need to worry about spelling or grammar.</p>
+            
+            <div className="glass-card p-[1px] mb-4">
+              <div className="bg-black/50 rounded-[2rem] p-2 flex items-center">
+                <input 
+                  className="bg-transparent flex-1 px-4 outline-none text-white font-body text-sm placeholder:text-zinc-600"
+                  placeholder="Example: procrastination, getting angry..."
+                  value={inputText} onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addItem(setHabits, habits)}
+                />
+                <button className="bg-gradient-to-r from-blue-500 to-violet-500 text-white p-3 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.5)] hover:scale-105 transition-transform" onClick={() => addItem(setHabits, habits)}>
+                  <Plus size={18} />
+                </button>
+              </div>
+            </div>
+
+            {habits.length === 0 ? (
+              <div className="text-center mt-4">
+                <p className="text-xs font-body text-zinc-500 animate-cinematic delay-1000">Write short bullet points. Don’t edit yourself – just get it out.</p>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3 pb-4">
+                {habits.map((h) => (
+                  <div key={h.id} className="glass-card p-4 rounded-[1.25rem] flex items-center gap-4 animate-cinematic">
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-magenta-500 shadow-[0_0_8px_rgba(217,70,239,0.8)]" />
+                    <span className="font-body text-sm text-zinc-200">{h.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="pt-4 mt-auto">
+              <Primary3DButton onClick={handleNext} disabled={habits.length === 0 && inputText.length === 0}>
+                {habits.length > 0 ? "Next Step" : "Skip for now"}
+              </Primary3DButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 8: Observation */}
+        {step === 7 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Now, slowly read through what you wrote.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Try not to judge yourself—just observe.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Notice if any item jumps out as particularly strong or important.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-magenta-orange animate-cinematic delay-3000">That might be a good one to explore first. (We’ll focus on one thing at a time.)</p>
+            <div className="absolute bottom-6 w-full animate-cinematic delay-4000">
+              <TactileButton onClick={handleNext}>Observe</TactileButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 9: Selection */}
+        {step === 8 && (
+          <div className="flex-1 flex flex-col h-full animate-cinematic pt-8">
+            <h2 className="text-3xl font-display font-bold text-white mb-2">Which one feels most important right now?</h2>
+            <p className="text-sm font-body text-zinc-400 mb-8">Tap the item you want to explore first. You can always come back to the others later.</p>
+
+            <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
+              {habits.map((h) => (
+                <button 
+                  key={h.id} onClick={() => { setSelectedHabitId(h.id); handleNext(); }}
+                  className="glass-card p-6 rounded-[1.5rem] text-left border border-white/5 hover:border-magenta-500/50 transition-colors group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-magenta-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="font-display font-medium text-lg text-white relative z-10 flex items-center justify-between">
+                    {h.text}
+                    <ChevronRight className="text-magenta-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Screen 10: Deep Dive */}
+        {step === 9 && (
+          <div className="flex-1 flex flex-col h-full animate-cinematic pt-6">
+            <div className="flex justify-center mb-4 animate-float">
+              <Badge text={habits.find(h => h.id === selectedHabitId)?.text || "Reflection"} icon={Zap} colorClass="bg-magenta-900/40 border-magenta-500/30 text-magenta-200" />
+            </div>
+            <h2 className="text-2xl font-display font-bold text-white mb-2 text-center">Tell the story of this issue in your own words.</h2>
+            <p className="text-sm font-body text-zinc-400 mb-6 text-center">Write in complete sentences about why this pattern might be happening.</p>
+
+            <div className="glass-card flex-1 rounded-[2rem] p-6 flex flex-col border border-white/[0.04] focus-within:border-magenta-500/30 transition-colors shadow-[0_20px_40px_rgba(0,0,0,0.8)]">
+              <textarea 
+                className="w-full bg-transparent text-white font-body text-[16px] outline-none placeholder:text-zinc-600 flex-1 resize-none leading-relaxed"
+                placeholder="I feel this way because..."
+                value={deepDiveText} onChange={(e) => setDeepDiveText(e.target.value)}
+              />
+            </div>
+            <div className="mt-6 space-y-1.5 text-center text-[12px] font-body text-zinc-500">
+              <p>Let your thoughts pour out naturally – don’t worry about editing.</p>
+              <p>You might ask yourself: 'Why does this happen? What is it protecting me from? Am I angry or afraid of something?'</p>
+            </div>
+            
+            <div className="pt-6 mt-auto">
+              <Primary3DButton onClick={handleNext}>Save Story</Primary3DButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 11: Reflection */}
+        {step === 10 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Take a breath and read over what you wrote.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Everything you wrote is human and understandable.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">These thoughts and feelings are real parts of you, and bringing them into the light is a brave act.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-lime-emerald animate-cinematic delay-3000">There’s nothing ‘wrong’ or disgusting here – it just shows you care about improving. Treat yourself with the same kindness you’d offer a friend.</p>
+            <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-4000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
+          </div>
+        )}
+
+        {/* Screen 12: Realization */}
+        {step === 11 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">How do you feel right now?</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Maybe a little lighter or proud?</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Confronting this is powerful—it takes courage.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-3000">It often feels more satisfying than trying to avoid the issue.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-cinematic delay-4000">You’re doing the hard work now, and you have everything you need to keep going.</p>
+            <div className="absolute bottom-6 w-full animate-cinematic delay-5000">
+              <TactileButton onClick={handleNext}>I am ready</TactileButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 13: The Future */}
+        {step === 12 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <div className="w-24 h-24 glass-card rounded-[2rem] flex items-center justify-center animate-float mb-8 animate-cinematic">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-magenta-500/20" />
+              <Moon size={40} className="text-white relative z-10" />
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic delay-1000">Now imagine yourself years from today.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">If things stay the same, those habits will still be running your life – what might that life look like?</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-3000">Remember, big changes come from small steps over time.</p>
+            <p className="text-xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-emerald-500 mb-12 animate-cinematic delay-4000 drop-shadow-lg">The door isn’t closed on you: you can start changing course today. You’re exactly where you need to be.</p>
+            <div className="absolute bottom-6 w-full animate-cinematic delay-5000">
+              <TactileButton onClick={handleNext}>Step Forward</TactileButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 14: Goals Input */}
+        {step === 13 && (
+          <div className="flex-1 flex flex-col h-full animate-cinematic pt-8">
+            <h2 className="text-2xl font-display font-bold text-white mb-2">What would you do differently from now on?</h2>
+            <p className="text-sm font-body text-zinc-400 mb-6">List the goals or changes you want in your life – even small ones. (They don’t all have to happen, just focus on enough to move in a better direction.)</p>
+            
+            <div className="glass-card p-[1px] mb-6">
+              <div className="bg-black/50 rounded-[2rem] p-2 flex items-center">
+                <input 
+                  className="bg-transparent flex-1 px-4 outline-none text-white font-body text-sm placeholder:text-zinc-600"
+                  placeholder="e.g. Read 10 pages, sleep earlier..."
+                  value={inputText} onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addItem(setGoals, goals)}
+                />
+                <button className="bg-gradient-to-r from-lime-400 to-green-500 text-black p-3 rounded-xl shadow-[0_0_15px_rgba(132,204,22,0.5)] hover:scale-105 transition-transform" onClick={() => addItem(setGoals, goals)}>
+                  <Plus size={18} />
+                </button>
+              </div>
+            </div>
+
+            {goals.length > 0 && (
+              <p className="text-[11px] font-display text-lime-400/80 tracking-wide mb-4 animate-cinematic text-center uppercase">
+                Your future is taking shape as you do this.
+              </p>
+            )}
+
+            <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3 pb-4">
+              {goals.map((g) => (
+                <div key={g.id} className="glass-card p-4 rounded-[1.25rem] flex items-center gap-4 animate-cinematic">
+                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-lime-400 to-green-500 shadow-[0_0_8px_rgba(132,204,22,0.8)]" />
+                  <span className="font-body text-sm text-zinc-200">{g.text}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="pt-4 mt-auto">
+              <Primary3DButton onClick={handleNext} disabled={goals.length === 0 && inputText.length === 0}>{goals.length > 0 ? "Continue" : "Skip for now"}</Primary3DButton>
+            </div>
+          </div>
+        )}
+
+        {/* Screen 15: The Process */}
+        {step === 14 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Real change happens step by step.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Like moving a mountain one stone at a time, every small action adds up.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">One day of effort can become a habit. Habits shape who we are.</p>
+            <p className="text-2xl font-display font-bold text-gradient gradient-magenta-orange mb-12 animate-cinematic delay-3000">So remember: even the tiniest repeatable step is a real beginning.</p>
+            <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-4000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
+          </div>
+        )}
+
+        {/* Screen 16: Launch / System */}
+        {step === 15 && (
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <div className="w-20 h-20 glass-card rounded-[1.5rem] flex items-center justify-center animate-float mb-6 animate-cinematic">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-magenta-500/20" />
+              <Layers size={32} className="text-white relative z-10" />
+            </div>
+            <h2 className="text-3xl font-display font-bold text-white mb-4 animate-cinematic delay-500">Welcome to your personal toolkit.</h2>
+            <p className="text-sm font-body font-light text-zinc-400 mb-8 animate-cinematic delay-1000">Here’s how to use it:</p>
+            
+            <div className="space-y-4 w-full mb-10 animate-cinematic delay-2000">
+              <div className="glass-recessed p-4 rounded-2xl flex items-center gap-4 text-left">
+                <CheckCircle2 className="text-blue-400" size={24} />
+                <div>
+                  <span className="text-md font-display font-bold text-white block">Tasks</span>
+                  <span className="text-xs font-body text-zinc-400">are your daily actions – the little stones you move.</span>
+                </div>
+              </div>
+              <div className="glass-recessed p-4 rounded-2xl flex items-center gap-4 text-left">
+                <Target className="text-magenta-400" size={24} />
+                <div>
+                  <span className="text-md font-display font-bold text-white block">Goals</span>
+                  <span className="text-xs font-body text-zinc-400">are recurring habits to build consistency.</span>
+                </div>
+              </div>
+              <div className="glass-recessed p-4 rounded-2xl flex items-center gap-4 text-left">
+                <FileText className="text-amber-400" size={24} />
+                <div>
+                  <span className="text-md font-display font-bold text-white block">Notes</span>
+                  <span className="text-xs font-body text-zinc-400">is a private journal for ideas or reflections.</span>
+                </div>
+              </div>
+              <div className="glass-recessed p-4 rounded-2xl flex items-center gap-4 text-left">
+                <BarChart2 className="text-lime-400" size={24} />
+                <div>
+                  <span className="text-md font-display font-bold text-white block">Progress</span>
+                  <span className="text-xs font-body text-zinc-400">shows how far you’ve come on this journey.</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs font-display text-blue-300/80 uppercase tracking-widest animate-cinematic delay-3000 mb-2">Everything is stored only on your device (no internet needed).</p>
+            <p className="text-lg font-display font-bold text-white animate-cinematic delay-4000 mb-8">You’re ready to start—go at your own pace.</p>
+            
+            <div className="absolute bottom-6 w-full animate-cinematic delay-5000">
+              <Primary3DButton onClick={finishOnboarding} disabled={isTransitioning}>
+                Enter Toolkit
+              </Primary3DButton>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
+};
+
+// ============================================================================
+// 4. MAIN APP TABS (UI Upgraded, Logic Intact)
+// ============================================================================
+
+const DashboardTab = ({ userData, tasks, setTasks, addXP }) => {
+  const activeTasks = tasks.filter(t => !t.completed);
+  const completedTasks = tasks.filter(t => t.completed);
   
-  const pendingToday = (appData?.tasks || []).filter((t: any) => t.deadline <= curDateStr && t.status !== 'completed');
-  const pendingUpcoming = (appData?.tasks || []).filter((t: any) => t.deadline > curDateStr && t.status !== 'completed');
-  const completedTasks = (appData?.tasks || []).filter((t: any) => t.status === 'completed');
+  const weightMap = { low: 1, medium: 2, high: 3 };
+  const totalWeight = tasks.reduce((sum, t) => sum + weightMap[t.priority], 0) || 1;
+  const completedWeight = completedTasks.reduce((sum, t) => sum + weightMap[t.priority], 0);
+  const executionPercent = Math.min(100, Math.round((completedWeight / totalWeight) * 100));
 
-  const getWeight = (prio: string) => ({ High: 50, Medium: 20, Low: 10 }[prio] || 10);
-  const totalWeight = dashboardTasks.reduce((sum: number, t: any) => sum + getWeight(t.priority), 0);
-  const completedWeight = dashboardTasks.filter((t: any) => t.status === 'completed').reduce((sum: number, t: any) => sum + getWeight(t.priority), 0);
-  const dailyProgressPct = totalWeight === 0 ? 0 : (completedWeight / totalWeight) * 100;
+  const now = new Date();
+  const dayProgress = (now.getHours() / 24) * 100;
+  const monthProgress = (now.getDate() / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) * 100;
+  const yearProgress = (now.getMonth() / 12) * 100;
 
-  const buff1 = appData?.profile?.customBuffs?.buff1 || { title: 'Extra Effort', xp: 100, lastClaimed: '' };
-  const buff2 = appData?.profile?.customBuffs?.buff2 || { title: 'Perfect Day', xp: 100, lastClaimed: '' };
+  return (
+    <div className="space-y-6 pb-32 animate-cinematic">
+      <header className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-[1.25rem] bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-[0_0_20px_rgba(217,70,239,0.4)] border border-white/20">
+            <span className="font-display font-bold text-2xl text-white drop-shadow-md">{userData.name.charAt(0)}</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-display font-bold text-white leading-none tracking-tight">Agent {userData.name}</h1>
+            <p className="text-[10px] font-display text-blue-400 uppercase tracking-widest mt-1.5 font-bold">Survive one more day</p>
+          </div>
+        </div>
+        <div className="glass-recessed px-5 py-3 rounded-[1.5rem] border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)] text-center min-w-[80px]">
+          <span className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-magenta-400 drop-shadow-sm">{userData.xp}</span>
+          <p className="text-[9px] text-zinc-500 font-display font-bold tracking-widest uppercase mt-1">Total XP</p>
+        </div>
+      </header>
 
-  const triggerBoost = () => {
-    setIsBoosted(true);
-    if (boostTimeout.current) clearTimeout(boostTimeout.current);
-    boostTimeout.current = setTimeout(() => setIsBoosted(false), 2000);
+      <SpatialCard padding="p-8" showOrbs={true}>
+        <div className="flex justify-around items-center relative z-10">
+          <ProgressRing progress={dayProgress} label="Day" gradientId="ringGradAccent" />
+          <div className="relative">
+            <ProgressRing progress={monthProgress} label="Month" size={100} stroke={8} gradientId="ringGradPrimary" />
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full shadow-[0_0_15px_white] animate-pulse border-2 border-magenta-500" />
+          </div>
+          <ProgressRing progress={yearProgress} label="Year" gradientId="ringGradLime" />
+        </div>
+      </SpatialCard>
+
+      <div className="glass-card p-6 border-t border-t-blue-500/30 hover:scale-[1.01] transition-transform">
+        <div className="flex justify-between text-[11px] font-display font-bold tracking-widest text-zinc-400 uppercase mb-4">
+          <div className="flex items-center gap-2"><Zap size={16} className="text-blue-400"/> Execution Protocol</div>
+          <span className="text-white bg-white/10 px-2.5 py-1 rounded-lg shadow-inner">{executionPercent}%</span>
+        </div>
+        <div className="h-4 rounded-full bg-black shadow-[inset_0_4px_8px_rgba(0,0,0,1)] relative overflow-hidden border border-white/[0.05]">
+          <div 
+            className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-magenta-500 shadow-[0_0_15px_rgba(217,70,239,0.8)] transition-all duration-1000 ease-out relative"
+            style={{ width: `${executionPercent}%` }}
+          >
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] opacity-60" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-[12px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mb-4">Action Queue</h2>
+        {activeTasks.length === 0 ? (
+          <div className="glass-recessed p-10 rounded-[2rem] text-center text-zinc-500 font-body text-sm border border-white/[0.02]">
+            Queue is clear. Rest or deploy.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {activeTasks.sort((a,b) => weightMap[b.priority] - weightMap[a.priority]).slice(0, 3).map(task => (
+              <div key={task.id} className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" style={{borderLeftColor: task.priority === 'high' ? '#ff00ff' : task.priority === 'medium' ? '#00f0ff' : 'transparent'}}>
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: true } : t));
+                  addXP(weightMap[task.priority] * 10);
+                }}>
+                  <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-7 h-7" />
+                </button>
+                <div className="flex-1">
+                  <p className="text-white font-body text-[16px] font-medium leading-tight">{task.title}</p>
+                </div>
+              </div>
+            ))}
+            {activeTasks.length > 3 && (
+              <p className="text-center text-[10px] font-display text-zinc-500 mt-4 uppercase tracking-widest bg-black/40 rounded-full py-2.5 w-max mx-auto px-5 border border-white/5">+{activeTasks.length - 3} more tasks</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TasksTab = ({ tasks, setTasks, addXP }) => {
+  const [newTask, setNewTask] = useState('');
+  const [priority, setPriority] = useState('medium');
+
+  const handleAddTask = () => {
+    if (!newTask.trim()) return;
+    setTasks([{ id: Date.now(), title: newTask, priority, completed: false }, ...tasks]);
+    setNewTask('');
   };
 
-  const spawnParticles = (e: React.MouseEvent, priorityLevel: string) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const level = priorityLevel === 'High' ? 3 : priorityLevel === 'Medium' ? 2 : 1;
-    const count = level * 8 + 8; 
-    
-    const newParticles = Array.from({ length: count }).map(() => {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 50 + Math.random() * (90 * level);
-      return {
-        id: Math.random() + Date.now(), x, y,
-        tx: `${Math.cos(angle) * dist}px`, ty: `${Math.sin(angle) * dist}px`,
-        rot: `${Math.random() * 360}deg`, life: `${0.5 + Math.random() * 0.5}s`,
-        icon: [Zap, Sparkles, Flame, Target][Math.floor(Math.random() * 4)],
-        color: [TOKENS.solarOrange, TOKENS.royalAmethyst, TOKENS.cyanGlow, '#FFFFFF'][Math.floor(Math.random() * 4)],
-        size: 10 + Math.random() * 12
-      };
-    });
-    setParticles(prev => [...prev, ...newParticles].slice(-40));
-    setTimeout(() => setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id))), 1200);
+  const activeTasks = tasks.filter(t => !t.completed);
+  const completedTasks = tasks.filter(t => t.completed);
+
+  return (
+    <div className="space-y-6 pb-32 animate-cinematic h-full flex flex-col">
+      <div className="flex justify-between items-end px-2">
+        <h1 className="text-4xl font-display font-bold text-white tracking-tighter">Tasks</h1>
+        <Badge text="PROTOCOL" colorClass="bg-blue-500/20 text-blue-300 border-blue-500/30" />
+      </div>
+      
+      <SpatialCard padding="p-6" className="shrink-0 border-t border-t-blue-500/30">
+        <div className="glass-recessed rounded-[1.25rem] p-4 mb-5 border border-white/[0.02] focus-within:border-blue-500/40 transition-colors shadow-inner">
+          <input 
+            className="w-full bg-transparent text-white font-body text-[16px] outline-none placeholder:text-zinc-500"
+            placeholder="Define next action..."
+            value={newTask} onChange={(e) => setNewTask(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <SegmentedControl3D 
+              options={[
+                { id: 'low', label: 'Low' },
+                { id: 'medium', label: 'Med' },
+                { id: 'high', label: 'High' }
+              ]}
+              selected={priority}
+              onChange={setPriority}
+            />
+          </div>
+          <button className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-[0_0_20px_rgba(217,70,239,0.5)] text-white hover:scale-105 active:scale-95 transition-transform border border-white/20" onClick={handleAddTask}>
+            <Plus size={24} />
+          </button>
+        </div>
+      </SpatialCard>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
+        <div className="space-y-4">
+          <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Active Targets</h2>
+          {activeTasks.length === 0 && <p className="text-zinc-600 text-[14px] px-2 font-body">No tasks deployed.</p>}
+          {activeTasks.map(task => (
+            <div key={task.id} className="glass-card p-5 rounded-[1.5rem] flex items-center gap-4 group">
+              <button onClick={() => {
+                setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: true } : t));
+                const weightMap = { low: 1, medium: 2, high: 3 };
+                addXP(weightMap[task.priority] * 10);
+              }}>
+                <Circle className="text-zinc-600 group-hover:text-blue-400 transition-colors w-7 h-7" />
+              </button>
+              <div className="flex-1">
+                <p className="text-white font-body text-[16px] font-medium leading-tight">{task.title}</p>
+              </div>
+              <Badge text={task.priority} colorClass={
+                task.priority === 'high' ? 'bg-magenta-500/20 text-magenta-300 border-magenta-500/30' : 
+                task.priority === 'medium' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : 
+                'bg-zinc-800 text-zinc-400 border-white/5'
+              } />
+            </div>
+          ))}
+        </div>
+
+        {completedTasks.length > 0 && (
+          <div className="space-y-4 opacity-50">
+            <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Cleared</h2>
+            {completedTasks.map(task => (
+              <div key={task.id} className="glass-recessed p-5 rounded-[1.5rem] flex items-center gap-4">
+                <CheckCircle2 className="text-blue-400/40 w-6 h-6" />
+                <p className="text-zinc-500 font-body text-[15px] line-through leading-tight">{task.title}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const GoalsTab = ({ goals, setGoals, addXP }) => {
+  return (
+    <div className="space-y-6 pb-32 animate-cinematic">
+      <div className="px-2">
+        <h1 className="text-4xl font-display font-bold text-white tracking-tighter mb-2">Milestones</h1>
+        <p className="text-zinc-400 text-[14px] font-body">Automated recurring missions.</p>
+      </div>
+
+      {goals.length === 0 && (
+        <div className="text-center py-16 glass-recessed rounded-[2rem] text-zinc-500 font-body text-[15px] border border-white/[0.02]">
+          No active milestones.
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {goals.map(goal => {
+          const progress = (goal.current / goal.target) * 100;
+          const isComplete = goal.current >= goal.target;
+          return (
+            <SpatialCard key={goal.id} padding="p-8" className="border-t border-t-magenta-500/30">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-white font-display font-bold text-2xl leading-tight mb-2">{goal.title}</h3>
+                  <Badge text={goal.frequency} colorClass="bg-magenta-500/10 text-magenta-300 border-magenta-500/20" />
+                </div>
+                <div className="glass-recessed px-5 py-3 rounded-2xl border border-white/5 text-center shadow-lg">
+                  <span className="text-3xl font-display font-bold text-white leading-none">{goal.current}</span>
+                  <div className="text-[11px] font-display text-zinc-500 uppercase tracking-widest mt-1">/ {goal.target}</div>
+                </div>
+              </div>
+              
+              <div className="h-4 glass-recessed rounded-full overflow-hidden p-[1px] mb-8 shadow-[inset_0_4px_8px_rgba(0,0,0,1)]">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 relative ${isComplete ? 'bg-magenta-500 shadow-[0_0_15px_rgba(217,70,239,0.9)]' : 'bg-gradient-to-r from-blue-500 to-magenta-500 shadow-[0_0_10px_rgba(217,70,239,0.6)]'}`}
+                  style={{ width: `${Math.min(100, progress)}%` }}
+                >
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] opacity-60" />
+                </div>
+              </div>
+
+              <Primary3DButton 
+                disabled={isComplete}
+                onClick={() => {
+                  if (!isComplete) {
+                    setGoals(goals.map(g => g.id === goal.id ? { ...g, current: g.current + 1 } : g));
+                    addXP(25);
+                  }
+                }}
+              >
+                {isComplete ? "Milestone Cleared" : "Deploy Action"}
+              </Primary3DButton>
+            </SpatialCard>
+          )
+        })}
+      </div>
+    </div>
+  );
+};
+
+const NotesTab = ({ notes, setNotes, showToast }) => {
+  const [newNote, setNewNote] = useState({ title: '', content: '' });
+
+  const saveNote = () => {
+    if (!newNote.content.trim()) return;
+    setNotes([{ id: Date.now(), ...newNote, date: new Date().toLocaleDateString() }, ...notes]);
+    setNewNote({ title: '', content: '' });
+    showToast("Record preserved.");
   };
 
-  const executeTask = (p: any, e: React.MouseEvent) => {
-    if (p.status === 'completed' || processingTasks.has(p.id)) return;
-    setProcessingTasks(prev => new Set(prev).add(p.id)); 
-    triggerBoost(); 
-    playSound('complete');
-    spawnParticles(e, p.priority);
-    
-    updateAppData((data: any) => {
-      const task = data.tasks.find((t: any) => t.id === p.id);
-      if (!task || task.status === 'completed') return;
+  return (
+    <div className="space-y-6 pb-32 animate-cinematic h-full flex flex-col">
+      <div className="px-2 flex justify-between items-end">
+        <h1 className="text-4xl font-display font-bold text-white tracking-tighter">Vault</h1>
+        <Badge text="PRIVATE" icon={Shield} colorClass="bg-white/10 text-white border-white/20" />
+      </div>
+      
+      {/* Sleek Frosted Glass Editor (Upgraded from Paper) */}
+      <div className="glass-card rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-blue-500/20 relative shrink-0">
+        <h3 className="font-display font-bold text-xl text-white mb-5 flex items-center gap-2">
+          <Sparkles className="text-blue-400" size={20} /> New Reflection
+        </h3>
+        <div className="space-y-4 mb-6">
+          <input 
+            className="w-full bg-transparent text-white font-display font-bold text-2xl outline-none placeholder:text-zinc-600 border-b border-white/10 pb-3"
+            placeholder="Title (Optional)"
+            value={newNote.title} onChange={e => setNewNote({...newNote, title: e.target.value})}
+          />
+          <textarea 
+            className="w-full bg-transparent text-zinc-300 font-body text-[16px] outline-none placeholder:text-zinc-600 min-h-[120px] resize-none leading-relaxed pt-2"
+            placeholder="Capture thoughts, ideas, or rules..."
+            value={newNote.content} onChange={e => setNewNote({...newNote, content: e.target.value})}
+          />
+        </div>
+        <Primary3DButton onClick={saveNote}>Preserve Record</Primary3DButton>
+      </div>
 
-      task.status = 'completed';
-      task.completedAt = Date.now();
-      task.completedDateStr = curDateStr;
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-5 pt-4">
+        <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Archived</h2>
+        {notes.length === 0 && <p className="text-zinc-600 text-[14px] px-2 font-body">Vault is empty.</p>}
+        {notes.map(note => (
+          <div key={note.id} className="glass-card p-6 border-t border-t-amber-500/30 hover:scale-[1.02] transition-transform">
+            {note.title && <h3 className="text-white font-display font-bold text-xl mb-3">{note.title}</h3>}
+            <p className="text-zinc-300 text-[15px] font-body leading-relaxed whitespace-pre-wrap">{note.content}</p>
+            <div className="mt-6 text-[10px] font-display font-bold text-amber-500/80 uppercase tracking-widest bg-amber-500/10 w-max px-3 py-1 rounded-md">{note.date}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-      const xp = p.priority === 'High' ? 50 : p.priority === 'Medium' ? 20 : 10;
+const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, handleImport }) => {
+  return (
+    <div className="space-y-6 pb-32 animate-cinematic">
+      <h1 className="text-4xl font-display font-bold text-white px-2 tracking-tighter">System</h1>
+      
+      <SpatialCard padding="p-8" className="flex flex-col items-center text-center gap-6 border-t border-t-lime-500/40">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 via-green-500 to-blue-600 p-[3px] shadow-[0_0_30px_rgba(132,204,22,0.5)]">
+          <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
+            <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-lime-400 to-blue-500">{userData.name.charAt(0) || 'S'}</span>
+          </div>
+        </div>
+        <div>
+          <h2 className="text-3xl font-display font-bold text-white drop-shadow-md leading-tight">{userData.name}</h2>
+          <div className="mt-3 flex justify-center">
+            <Badge text={`Level ${Math.floor(userData.xp / 100) + 1} Cleanser`} colorClass="bg-lime-500/15 text-lime-400 border-lime-500/30 px-4 py-2 text-sm" />
+          </div>
+        </div>
+      </SpatialCard>
 
-      data.profile.score += xp;
-      data.profile.xpLogs[curDateStr] = (data.profile.xpLogs[curDateStr] || 0) + xp;
-    });
-    
-    setProcessingTasks(prev => { const s = new Set(prev); s.delete(p.id); return s; });
+      <div className="space-y-4">
+        <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mt-8">Data Protection</h2>
+        <div className="glass-card p-3 space-y-2">
+          <div className="p-5 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 rounded-[1rem] bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                <Download size={20} />
+              </div>
+              <div>
+                <p className="text-[16px] font-display font-bold text-white">System Backup</p>
+                <p className="text-[12px] font-body text-zinc-500 mt-1">Save local data securely</p>
+              </div>
+            </div>
+            <button className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform" onClick={handleExport}>Export</button>
+          </div>
+
+          <div className="p-5 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 rounded-[1rem] bg-magenta-500/10 border border-magenta-500/30 flex items-center justify-center text-magenta-400 shadow-[0_0_15px_rgba(217,70,239,0.2)]">
+                <Upload size={20} />
+              </div>
+              <div>
+                <p className="text-[16px] font-display font-bold text-white">Restore Data</p>
+                <p className="text-[12px] font-body text-zinc-500 mt-1">Load previous .json file</p>
+              </div>
+            </div>
+            <button className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform" onClick={() => fileInputRef.current.click()}>Import</button>
+            <input type="file" accept=".json" ref={fileInputRef} className="hidden" onChange={handleImport} />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mt-8">Active Shadows</h2>
+        <div className="glass-card p-4 space-y-3">
+          {habits.length === 0 && <p className="text-zinc-500 text-[14px] px-4 py-3 font-body">No shadows recorded.</p>}
+          {habits.map((h, i) => (
+            <div key={i} className="px-5 py-4 glass-recessed rounded-[1.5rem] text-zinc-300 text-[15px] font-body flex items-center gap-4 border border-white/[0.02]">
+              <Pickaxe size={18} className="text-zinc-500 shrink-0" />
+              <span className="leading-relaxed font-medium">{h.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// MAIN APP WRAPPER
+// ============================================================================
+export default function App() {
+  const [appState, setAppState] = useState('onboarding'); 
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [toast, setToast] = useState(null);
+
+  // Core Data State (In-Memory for strict local-first compliance)
+  const [userData, setUserData] = useState({ name: '', xp: 0 });
+  const [habits, setHabits] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const fileInputRef = useRef(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const claimCustomBuff = (buffKey: string, buffObj: any, e: React.MouseEvent) => {
-    if (buffObj.lastClaimed === curDateStr || processingTasks.has(buffKey)) return;
-    setProcessingTasks(prev => new Set(prev).add(buffKey)); 
-    triggerBoost();
-    playSound('streak');
-    spawnParticles(e, 'High');
-    
-    updateAppData((data: any) => {
-      const buff = data.profile.customBuffs[buffKey];
-      if (buff.lastClaimed === curDateStr) return;
-
-      buff.lastClaimed = curDateStr;
-
-      data.profile.score += buff.xp;
-      data.profile.xpLogs[curDateStr] = (data.profile.xpLogs[curDateStr] || 0) + buff.xp;
-    });
-    
-    setProcessingTasks(prev => { const s = new Set(prev); s.delete(buffKey); return s; });
-  };
-
-  const saveBuffEdit = (buffKey: string) => {
-    const title = buffForm.title.trim();
-    if (!title) { addToast("Title cannot be empty"); return; }
-    const xp = Math.max(0, parseInt(buffForm.xp as any) || 0);
-
-    updateAppData((data: any) => {
-      data.profile.customBuffs[buffKey].title = title;
-      data.profile.customBuffs[buffKey].xp = xp;
-    });
-    setEditingBuff(null);
+  const addXP = (amount) => {
+    setUserData(prev => ({ ...prev, xp: prev.xp + amount }));
+    showToast(`+${amount} XP Earned`);
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(appData)], { type: 'application/json' });
+    const data = { userData, habits, tasks, goals, notes };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
     a.href = url;
-    a.download = `backup.json`;
+    a.download = `ShadowCleanser_Backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
+    showToast("Data exported securely.");
   };
 
-  const handleImport = (e: any) => {
-    const file = e.target.files[0];
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
-
-    reader.onload = (event: any) => {
+    reader.onload = () => {
       try {
-        const data = JSON.parse(event.target.result);
-        if (!data.profile) throw new Error();
-
-        setAppData(data);
-        saveData(data);
-        addToast("Data Restored");
-      } catch {
-        addToast("Invalid file");
+        if (typeof reader.result === 'string') {
+          const data = JSON.parse(reader.result);
+          if (data.userData) setUserData(data.userData);
+          if (data.habits) setHabits(data.habits);
+          if (data.tasks) setTasks(data.tasks);
+          if (data.goals) setGoals(data.goals);
+          if (data.notes) setNotes(data.notes);
+          showToast("Identity Restored.");
+        }
+      } catch (err) {
+        showToast("Invalid backup file.");
       }
     };
-
     reader.readAsText(file);
   };
 
-  const changeTheme = (color: string) => {
-    updateAppData((data: any) => {
-      data.profile.theme = color;
-    });
-  };
-
-  const addToast = (msg: string) => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, msg }].slice(-3));
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
-  };
-
-  const handleBoot = (e: any) => {
-    e.preventDefault();
-
-    const name = e.target.name.value.trim();
-    const focus = e.target.focus.value.trim();
-
-    if (!name || !focus) return;
-
-    playSound('boot');
-
-    updateAppData((data: any) => {
-      data.profile = {
-        booted: true,
-        codename: name,
-        directive: focus,
-        score: 0,
-        xpLogs: {},
-        theme: TOKENS.solarOrange,
-        joinedAt: Date.now(),
-        customBuffs: {
-          buff1: { title: 'Extra Effort', xp: 100, lastClaimed: '' },
-          buff2: { title: 'Perfect Day', xp: 100, lastClaimed: '' }
-        }
-      };
-    });
-  };
-
-  const getYieldData = (range: string) => {
-    const daysToMap = range === '7d' ? 7 : range === '30d' ? 30 : 365;
-    return Array.from({length: daysToMap}).map((_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - ((daysToMap - 1) - i));
-      const xp = appData?.profile?.xpLogs?.[getLocalDateStr(d)] || 0;
-      return { date: d, xp };
-    });
-  };
-
-  if (isLoading) return <div className="min-h-screen bg-[#050508] flex items-center justify-center"><Loader2 className="text-[var(--theme-color)] animate-spin" /></div>;
-
-  const currentTheme = appData?.profile?.theme || TOKENS.solarOrange;
-  const yieldData = getYieldData(yieldRange);
-  const maxYieldXP = Math.max(...Object.values(appData?.profile?.xpLogs || {}).map(v => Number(v)), 100);
-  const rgbTheme = hexToRgb(currentTheme);
-
-  if (!appData?.profile?.booted) {
+  if (appState === 'onboarding') {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-white relative overflow-hidden bg-[#050508]`} style={{ '--theme-color': currentTheme } as any}>
-        <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
-          <RayCard className="!w-24 !h-24 mb-8">
-             <div className="w-full h-full flex items-center justify-center">
-                <Shield size={36} className="text-[var(--theme-color)]" />
-             </div>
-          </RayCard>
-          <h1 className="font-heading text-[32px] mb-2 tracking-tight">Initialize Flow</h1>
-          <form className="w-full space-y-4" onSubmit={handleBoot}>
-            <GlassInput name="name" placeholder="Your Name" required />
-            <GlassInput name="focus" placeholder="Main Focus" required />
-            <div className="pt-4">
-              <SpatialButton type="submit" icon={Zap}>Start Journey</SpatialButton>
-            </div>
-          </form>
+      <div className="min-h-screen bg-[#030303] text-white font-body flex justify-center overflow-hidden antialiased selection:bg-blue-500/30 relative">
+        <InjectedStyles />
+        <div className="absolute inset-0 pointer-events-none bg-grid opacity-20 z-0" />
+        <div className="w-full max-w-[428px] h-[100dvh] relative z-10 bg-[#030303]/80 shadow-[0_0_100px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.02)] border-x border-white/[0.04]">
+          <Onboarding onComplete={(data) => {
+            setUserData({ name: data.name, xp: 0 });
+            setHabits(data.habits);
+            setGoals(data.goals.map(g => ({ id: g.id, title: g.text, target: 30, current: 0, frequency: 'daily' })));
+            
+            // Integrate Deep Dive into Notes Vault
+            if (data.deepDiveNote) {
+              setNotes([{ id: Date.now(), ...data.deepDiveNote, date: new Date().toLocaleDateString() }]);
+            }
+            
+            setAppState('main');
+          }} />
         </div>
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'Dashboard', icon: BarChart2 },
+    { id: 'Tasks', icon: CheckCircle2 },
+    { id: 'Goals', icon: Target },
+    { id: 'Notes', icon: FileText },
+    { id: 'Stats', icon: Sliders },
+  ];
+
   return (
-    <div className={`min-h-screen relative pb-28 bg-[#050508] ${isBoosted ? 'app-boosted' : ''}`} style={{ '--theme-color': currentTheme } as any}>
-      <header className="w-full pt-10 pb-6 px-6">
-        <div className="max-w-md mx-auto flex justify-between items-center">
-          <div>
-            <div className="text-[10px] font-medium text-[#A1A1AA] uppercase tracking-widest flex items-center gap-2 mb-1">
-               <div className="w-1.5 h-1.5 rounded-full animate-pulse bg-[var(--theme-color)]" /> 
-               {appData?.profile?.codename}
-            </div>
-            <h2 className="font-heading text-lg tracking-tight text-white truncate max-w-[180px]">{appData?.profile?.directive}</h2>
-          </div>
-          <div className="text-right">
-             <div className="text-[10px] font-medium text-[#A1A1AA] uppercase tracking-widest mb-0.5">Total XP</div>
-             <div className="text-4xl font-heading font-black text-[var(--theme-color)]">
-               <AnimatedNumber value={appData?.profile?.score || 0} />
-             </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-md mx-auto px-5 py-2 w-full">
-        {activeTab === 'dashboard' && (
-          <div className="space-y-3">
-            <RayCard className="py-7">
-               <div className="flex flex-row justify-between px-1 items-center w-full">
-                 <HeroRing progress={timeBurn.day.pct} mainText={timeBurn.day.main} subText={timeBurn.day.sub} label="Day" />
-                 <HeroRing progress={timeBurn.month.pct} mainText={timeBurn.month.main} subText={timeBurn.month.sub} label="Month" />
-                 <HeroRing progress={timeBurn.year.pct} mainText={timeBurn.year.main} subText={timeBurn.year.sub} label="Year" />
-               </div>
-            </RayCard>
-
-            <RayCard>
-               <AnimatedProgressBar progress={dailyProgressPct} label="Execution Progress" val={`${Math.round(dailyProgressPct)}%`} />
-            </RayCard>
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: 'buff1', data: buff1, icon: Flame },
-                { key: 'buff2', data: buff2, icon: Sparkles }
-              ].map((b, idx) => {
-                const isClaimed = b.data.lastClaimed === curDateStr;
-                return (
-                  <RayCard key={b.key} className="flex flex-col justify-between !p-4 min-h-[140px]">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-colors ${isClaimed ? 'bg-[rgba(255,255,255,0.03)]' : 'bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] shadow-[0_5px_15px_rgba(0,0,0,0.5)]'}`}>
-                         <b.icon size={18} className={isClaimed ? 'text-[#71717A]' : idx === 0 ? 'text-[var(--theme-color)]' : 'text-[#8B5CF6]'} />
-                      </div>
-                      {!isClaimed && <span className={`text-[11px] font-bold ${idx===0 ? 'text-[var(--theme-color)]' : 'text-[#8B5CF6]'}`}>+{b.data.xp}</span>}
-                    </div>
-                    <div>
-                       <h4 className="font-heading text-[14px] text-white mb-2 leading-tight">{b.data.title}</h4>
-                       <button onClick={(e) => claimCustomBuff(b.key, b.data, e)} className="w-full py-2 rounded-[10px] text-[9px] font-bold uppercase tracking-widest bg-[rgba(255,255,255,0.03)] text-[#71717A] transition-all hover:bg-white/5 active:scale-95">{isClaimed ? 'Claimed' : 'Activate'}</button>
-                    </div>
-                  </RayCard>
-                )
-              })}
-            </div>
-
-            <RayCard>
-               <div className="flex justify-between items-center mb-3 px-1">
-                 <h3 className="font-heading text-[15px] text-white">Action Queue</h3>
-                 <button onClick={() => setActiveTab('tasks')} className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-widest hover:text-white transition-colors">View All</button>
-               </div>
-               <div className="space-y-2.5 mt-3">
-                  {dashboardTasks.length === 0 ? (
-                     <div className="py-5 text-center text-[#71717A] text-[10px] font-semibold uppercase tracking-widest border border-[rgba(255,255,255,0.05)] border-dashed rounded-[14px]">Queue clear</div>
-                  ) : dashboardTasks.slice(0, 4).map(t => (
-                    <div key={t.id} onClick={(e) => executeTask(t, e)} className={`p-3 bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.05)] rounded-[14px] flex items-center justify-between transition-all ${t.status === 'completed' ? 'opacity-30' : 'cursor-pointer hover:bg-[rgba(255,255,255,0.04)]'}`}>
-                       <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center ${t.status === 'completed' ? 'bg-[var(--theme-color)]' : 'border border-white/10'}`}>
-                             {t.status === 'completed' ? <CheckCircle2 size={14} className="text-white" /> : <Circle size={14} className="text-[#A1A1AA]" />}
-                          </div>
-                          <div>
-                             <p className={`font-medium text-[13px] leading-tight ${t.status==='completed'?'line-through text-[#A1A1AA]':'text-white'}`}>{t.title}</p>
-                             <span className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: t.priority === 'High' ? 'var(--theme-color)' : '#A1A1AA' }}>
-                               {t.priority} {t.time ? `• ${format12Hour(t.time)}` : ''}
-                             </span>
-                          </div>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </RayCard>
-          </div>
-        )}
-
-        {activeTab === 'tasks' && (
-          <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <RayCard className="stagger-1">
-                <form className="space-y-3" onSubmit={(e: any) => {
-                   e.preventDefault();
-                   const title = e.target.title.value.trim();
-                   if (!title) { addToast("Task needs a title"); return; }
-                   
-                   updateAppData((data: any) => {
-                     data.tasks.unshift({
-                       id: crypto.randomUUID(),
-                       title: title.substring(0, 100),
-                       priority: taskPriority,
-                       goalId: taskGoalId || null,
-                       deadline: taskDeadline,
-                       time: taskTime,
-                       status: 'pending',
-                       createdAt: Date.now()
-                     });
-                   });
-                   e.target.reset();
-                   setTaskPriority('High'); setTaskDeadline(curDateStr); setTaskTime(''); setTaskGoalId('');
-                }}>
-                   <h3 className="font-heading text-[16px] text-white">Add Protocol</h3>
-                   <GlassInput name="title" placeholder="Execute..." maxLength={100} required />
-                   
-                   <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-widest">Priority Weight</span>
-                      <div className="flex gap-2">
-                        {['High', 'Medium', 'Low'].map(prio => (
-                           <button key={prio} type="button" onClick={() => setTaskPriority(prio)} className={`flex-1 py-3 rounded-[14px] text-[11px] font-semibold uppercase tracking-widest transition-all border ${taskPriority === prio ? 'bg-[rgba(255,255,255,0.08)] text-white border-[var(--theme-color)]' : 'bg-[rgba(255,255,255,0.03)] text-[#A1A1AA] border-transparent hover:bg-[rgba(255,255,255,0.06)]'}`}>{prio}</button>
-                        ))}
-                      </div>
-                   </div>
-
-                   <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-widest">Target Deadline & Time</span>
-                      <div className="flex gap-2 items-center">
-                         <CleanDateInput value={taskDeadline} onChange={(e: any) => setTaskDeadline(e.target.value)} />
-                         <CleanTimeInput value={taskTime} onChange={(e: any) => setTaskTime(e.target.value)} />
-                      </div>
-                      <div className="text-[10px] font-semibold text-white ml-1 mt-1 opacity-80">
-                        {taskDeadline === curDateStr && !taskTime ? 'Due Today' : 
-                         taskDeadline === nextDateStr && !taskTime ? 'Due Tomorrow' : 
-                         `${new Date(taskDeadline).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}${taskTime ? ` at ${format12Hour(taskTime)}` : ''}`}
-                      </div>
-                   </div>
-
-                   <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-widest">Link Objective</span>
-                      <div className="flex overflow-x-auto gap-2 pb-1 hide-scrollbar snap-x">
-                         <button type="button" onClick={() => setTaskGoalId('')} className={`px-3 py-2 rounded-[12px] text-[10px] font-medium whitespace-nowrap shrink-0 snap-center transition-all border ${taskGoalId === '' ? 'bg-[rgba(255,255,255,0.08)] text-white border-[var(--theme-color)]' : 'bg-[rgba(255,255,255,0.03)] text-[#A1A1AA] border-transparent hover:bg-white/5'}`}>None</button>
-                         {(appData?.goals || []).map((g: any) => (
-                            <button key={g.id} type="button" onClick={() => setTaskGoalId(g.id)} className={`px-3 py-2 rounded-[12px] text-[10px] font-medium whitespace-nowrap shrink-0 snap-center transition-all border ${taskGoalId === g.id ? 'bg-[rgba(255,255,255,0.08)] text-white border-[var(--theme-color)]' : 'bg-[rgba(255,255,255,0.03)] text-[#A1A1AA] border-transparent hover:bg-white/5'}`}>
-                              {g.title}
-                            </button>
-                         ))}
-                      </div>
-                   </div>
-
-                   <SpatialButton type="submit" icon={Plus}>Queue Task</SpatialButton>
-                </form>
-             </RayCard>
-             
-             <div className="space-y-4 stagger-2">
-                {pendingToday.length > 0 && (
-                   <div className="space-y-2.5">
-                      <h4 className="text-[10px] font-heading font-semibold text-[#A1A1AA] uppercase tracking-widest px-1">Today & Overdue</h4>
-                      {pendingToday.map(t => (
-                         <RayCard key={t.id} onClick={(e) => executeTask(t, e)} className="!p-3.5 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.04)]">
-                            <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 rounded-[12px] flex items-center justify-center border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.4)]">
-                                  {processingTasks.has(t.id) ? <Loader2 size={16} className="text-[#A1A1AA] animate-spin"/> : <Circle size={18} className="text-[#A1A1AA]" />}
-                               </div>
-                               <div>
-                                  <p className="font-medium text-[14px] mb-0.5 text-white truncate max-w-[200px]">{t.title}</p>
-                                  <span className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-widest">
-                                    {t.priority} Priority • {t.deadline === curDateStr ? 'Due Today' : `Overdue: ${new Date(t.deadline).toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
-                                    {t.time ? ` at ${format12Hour(t.time)}` : ''}
-                                  </span>
-                               </div>
-                            </div>
-                         </RayCard>
-                      ))}
-                   </div>
-                )}
-
-                {pendingUpcoming.length > 0 && (
-                   <div className="space-y-2.5">
-                      <h4 className="text-[10px] font-heading font-semibold text-[#A1A1AA] uppercase tracking-widest px-1">Scheduled Upcoming</h4>
-                      {pendingUpcoming.map(t => (
-                         <RayCard key={t.id} onClick={(e) => executeTask(t, e)} className="!p-3.5 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.04)]">
-                            <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 rounded-[12px] flex items-center justify-center border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.4)]">
-                                  {processingTasks.has(t.id) ? <Loader2 size={16} className="text-[#A1A1AA] animate-spin"/> : <Circle size={18} className="text-[#A1A1AA]" />}
-                               </div>
-                               <div>
-                                  <p className="font-medium text-[14px] mb-0.5 text-white truncate max-w-[200px]">{t.title}</p>
-                                  <span className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-widest">
-                                    {t.priority} Priority • Due {t.deadline === nextDateStr ? 'Tomorrow' : new Date(t.deadline).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                    {t.time ? ` at ${format12Hour(t.time)}` : ''}
-                                  </span>
-                               </div>
-                            </div>
-                         </RayCard>
-                      ))}
-                   </div>
-                )}
-
-                {completedTasks.length > 0 && (
-                   <div className="space-y-2.5">
-                      <h4 className="text-[10px] font-heading font-semibold text-[#A1A1AA] uppercase tracking-widest px-1">Completed</h4>
-                      {completedTasks.map(t => (
-                         <RayCard key={t.id} className="!p-3.5 flex items-center justify-between opacity-40 grayscale">
-                            <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 rounded-[12px] flex items-center justify-center bg-[var(--theme-color)] border-none">
-                                  <CheckCircle2 size={18} className="text-white" />
-                               </div>
-                               <div>
-                                  <p className="font-medium text-[14px] mb-0.5 line-through text-[#A1A1AA] truncate max-w-[200px]">{t.title}</p>
-                                  <span className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-widest">{t.priority} Priority</span>
-                               </div>
-                            </div>
-                         </RayCard>
-                      ))}
-                   </div>
-                )}
-             </div>
-          </div>
-        )}
-
-        {activeTab === 'goals' && (
-          <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <RayCard className="stagger-1">
-                <form className="space-y-3" onSubmit={(e: any) => {
-                   e.preventDefault();
-                   const title = e.target.title.value.trim();
-                   if (!title) { addToast("Objective needs a title"); return; }
-                   const safeTarget = Math.max(1, parseInt(goalTarget) || 1);
-
-                   updateAppData((data: any) => {
-                     data.goals.unshift({
-                       id: crypto.randomUUID(),
-                       title: title.substring(0, 100),
-                       timeline: goalTimeline,
-                       target: safeTarget,
-                       createdAt: Date.now()
-                     });
-                   });
-                   e.target.reset(); setGoalTimeline('Daily'); setGoalTarget(30);
-                }}>
-                   <h3 className="font-heading text-[16px] text-white">Deploy Milestone</h3>
-                   <GlassInput name="title" placeholder="Objective..." maxLength={100} required />
-                   <div className="flex gap-2">
-                     {['Daily', 'Weekly', 'Monthly'].map(t => (
-                       <button key={t} type="button" onClick={() => setGoalTimeline(t)} className={`flex-1 py-2.5 rounded-[12px] text-[10px] font-semibold uppercase tracking-widest border ${goalTimeline === t ? 'bg-[rgba(255,255,255,0.08)] text-white border-[var(--theme-color)]' : 'bg-[rgba(255,255,255,0.03)] border-transparent text-[#A1A1AA]'}`}>{t}</button>
-                     ))}
-                   </div>
-                   <div className="space-y-1.5 pt-1">
-                     <span className="text-[10px] font-heading font-semibold text-[#A1A1AA] uppercase tracking-widest">Deployment Count</span>
-                     <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-                       {[10, 20, 30, 40, 50].map(num => (
-                         <button key={num} type="button" onClick={() => setGoalTarget(num)} className={`px-4 py-2.5 rounded-[12px] text-[11px] font-bold shrink-0 transition-all border ${goalTarget == num ? 'bg-[rgba(255,255,255,0.08)] text-white border-[var(--theme-color)]' : 'bg-[rgba(255,255,255,0.03)] border-transparent text-[#A1A1AA]'}`}>{num}</button>
-                       ))}
-                       <input type="number" min="1" value={goalTarget} onChange={(e: any) => setGoalTarget(e.target.value)} placeholder="Custom" className="w-20 px-3 py-2.5 rounded-[12px] bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] text-white text-[11px] font-bold outline-none focus:border-[var(--theme-color)] shrink-0" />
-                     </div>
-                   </div>
-                   <SpatialButton type="submit" icon={Target}>Deploy Goal</SpatialButton>
-                </form>
-             </RayCard>
-             {(appData?.goals || []).length === 0 ? (
-                <div className="py-8 text-center text-[#71717A] text-[11px] font-heading font-semibold uppercase tracking-widest border border-[rgba(255,255,255,0.05)] border-dashed rounded-[16px]">No Active Milestones</div>
-             ) : (appData?.goals || []).map((g: any) => {
-               const linkedCompleted = (appData?.tasks || []).filter((t: any) => t.goalId === g.id && t.status === 'completed').length;
-               const pct = g.target > 0 ? Math.min((linkedCompleted / g.target) * 100, 100) : 0;
-               return (
-                 <RayCard key={g.id} className="stagger-2">
-                    <div className="flex justify-between items-start mb-5">
-                       <div>
-                          <span className="text-[10px] font-heading font-semibold text-[#A1A1AA] uppercase tracking-widest mb-1.5 block">{g.timeline}</span>
-                          <h4 className="font-heading text-[18px] text-white leading-tight">{g.title}</h4>
-                       </div>
-                       <div className="font-heading text-2xl text-[var(--theme-color)]">{linkedCompleted}<span className="text-[#71717A] text-[14px]">/{g.target}</span></div>
-                    </div>
-                    <AnimatedProgressBar progress={pct} label="Milestone Progress" val={`${Math.round(pct)}%`} />
-                 </RayCard>
-               );
-             })}
-          </div>
-        )}
-
-        {activeTab === 'notes' && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <RayCard className="stagger-1">
-                <form className="space-y-3" onSubmit={(e: any) => {
-                   e.preventDefault();
-                   const title = e.target.title.value.trim();
-                   const content = e.target.content.value.trim();
-                   if (!title || !content) { addToast("Note needs title and content"); return; }
-                   updateAppData((data: any) => {
-                     data.notes.unshift({
-                       id: crypto.randomUUID(),
-                       title: title.substring(0, 100),
-                       content: content.substring(0, 2000),
-                       createdAt: Date.now()
-                     });
-                   });
-                   e.target.reset();
-                }}>
-                   <h3 className="font-heading text-[16px] text-white">Log Record</h3>
-                   <GlassInput name="title" placeholder="Title" maxLength={100} required />
-                   <textarea name="content" placeholder="Content..." rows={4} maxLength={2000} className="w-full p-4 rounded-[16px] bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] outline-none text-white text-[12px] font-medium" />
-                   <SpatialButton type="submit" icon={Database}>Archive</SpatialButton>
-                </form>
-             </RayCard>
-             {(appData?.notes || []).length === 0 ? (
-                <div className="py-8 text-center text-[#71717A] text-[11px] font-heading font-semibold uppercase tracking-widest border border-[rgba(255,255,255,0.05)] border-dashed rounded-[16px]">Vault Empty</div>
-             ) : (
-               <div className="columns-2 gap-3 space-y-3 stagger-2">
-                 {(appData?.notes || []).map((n: any) => (
-                    <div key={n.id} className="break-inside-avoid">
-                      <RayCard className="!p-4">
-                         <h4 className="font-heading text-[14px] text-white mb-2">{n.title}</h4>
-                         <p className="text-[#A1A1AA] text-[11px] leading-relaxed line-clamp-6">{n.content}</p>
-                      </RayCard>
-                    </div>
-                 ))}
-               </div>
-             )}
-          </div>
-        )}
-
-        {activeTab === 'stats' && (
-          <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <RayCard className="stagger-1">
-                <div className="flex items-center gap-4">
-                   <div className="w-[56px] h-[56px] bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] rounded-[16px] flex items-center justify-center">
-                      <User size={24} className="text-[var(--theme-color)]" />
-                   </div>
-                   <div><h3 className="font-heading text-[22px] text-white">{appData?.profile?.codename}</h3><span className="text-[10px] font-heading uppercase text-[#A1A1AA] tracking-widest font-semibold">Active Status</span></div>
-                </div>
-                <div className="mt-6 pt-4 border-t border-white/5">
-                   <span className="text-[10px] font-heading text-[#A1A1AA] uppercase tracking-widest block mb-3 font-semibold">Core Theme Color</span>
-                   <div className="flex gap-2">
-                     {[TOKENS.solarOrange, TOKENS.royalAmethyst, '#10B981', '#EC4899', '#00E5FF'].map(color => (
-                        <button key={color} onClick={() => changeTheme(color)} className={`w-9 h-9 rounded-full ${appData?.profile?.theme === color ? 'ring-2 ring-white ring-offset-2 ring-offset-[#050508]' : ''}`} style={{ backgroundColor: color }} />
-                     ))}
-                   </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-white/5 flex gap-3">
-                   <button onClick={handleExport} className="flex-1 py-2.5 bg-white/5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-[#A1A1AA] hover:text-white flex items-center justify-center gap-2 transition-all">
-                      <Download size={14}/> Export Data
-                   </button>
-                   <label className="flex-1 py-2.5 bg-white/5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-[#A1A1AA] hover:text-white flex items-center justify-center gap-2 cursor-pointer transition-all">
-                      <Upload size={14}/> Import Data
-                      <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-                   </label>
-                </div>
-             </RayCard>
-             <RayCard className="stagger-2">
-                <div className="flex justify-between items-center mb-5">
-                  <h3 className="font-heading text-[16px] text-white">Analytics Yield</h3>
-                  <div className="flex gap-1 bg-white/5 p-1 rounded-[10px]">
-                     {['7d', '30d', '1y'].map(r => (
-                       <button key={r} onClick={() => setYieldRange(r)} className={`px-2 py-1 rounded-[8px] text-[10px] font-bold uppercase transition-colors ${yieldRange === r ? 'bg-[rgba(255,255,255,0.1)] text-white' : 'text-[#71717A]'}`}>{r}</button>
-                     ))}
-                  </div>
-                </div>
-                
-                {yieldRange === '7d' && (
-                  <div className="flex items-end justify-between h-28 gap-2">
-                    {yieldData.map((d, i) => {
-                      const pct = Math.min((d.xp / Math.max(1, maxYieldXP)) * 100, 100);
-                      const isToday = i === yieldData.length - 1;
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-2 justify-end h-full group">
-                           <div className={`w-full rounded-[6px] relative animate-draw-h ${isToday ? '' : 'bg-white/5'}`} 
-                                style={{ '--target-h': `${Math.max(pct, 4)}%`, background: isToday ? `linear-gradient(to top, var(--theme-color), ${TOKENS.royalAmethyst})` : '' } as any} />
-                           <span className={`text-[9px] font-bold ${isToday ? 'text-white' : 'text-[#71717A]'}`}>{d.date.toLocaleDateString('en-US', { weekday: 'short' })[0]}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {yieldRange === '30d' && (
-                  <div className="flex items-end justify-between h-28 gap-[2px]">
-                    {yieldData.map((d, i) => {
-                      const pct = Math.min((d.xp / Math.max(1, maxYieldXP)) * 100, 100);
-                      const isToday = i === yieldData.length - 1;
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                           <div className={`w-full rounded-[2px] relative animate-draw-h ${isToday ? 'bg-[var(--theme-color)]' : 'bg-white/10'}`} style={{ '--target-h': `${Math.max(pct, 2)}%` } as any} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {yieldRange === '1y' && (
-                  <div className="flex flex-col gap-1 overflow-x-auto hide-scrollbar flex-row-reverse pb-1" dir="rtl">
-                     <div className="grid grid-rows-7 grid-flow-col gap-1" dir="ltr">
-                        {yieldData.map((d, i) => {
-                           const intensity = d.xp === 0 ? 0 : Math.max(0.2, d.xp / Math.max(1, maxYieldXP));
-                           return (
-                             <div key={i} className="w-[10px] h-[10px] rounded-[2px]" 
-                                  style={{ backgroundColor: d.xp === 0 ? 'rgba(255,255,255,0.03)' : `rgba(${rgbTheme}, ${intensity})` }} 
-                                  title={`${d.xp} XP on ${getLocalDateStr(d.date)}`}
-                             />
-                           );
-                        })}
-                     </div>
-                  </div>
-                )}
-             </RayCard>
-          </div>
-        )}
-      </main>
-
-      <nav className="fixed bottom-8 left-0 right-0 z-[100] px-6 flex justify-center pointer-events-none">
-        <div className="h-[72px] w-full max-w-sm !rounded-[36px] flex items-center px-2 pointer-events-auto bg-[rgba(15,15,18,0.85)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_20px_40px_rgba(0,0,0,0.9)]">
-          {[
-            { id: 'dashboard', icon: LayoutGrid },
-            { id: 'tasks', icon: Calendar },
-            { id: 'goals', icon: Target },
-            { id: 'notes', icon: Database },
-            { id: 'stats', icon: BarChart3 },
-          ].map(item => (
-            <button key={item.id} onClick={() => { playSound('complete'); setActiveTab(item.id); }} className="flex-1 flex flex-col items-center justify-center h-full transition-all relative group">
-              <item.icon size={22} className={`z-10 transition-all ${activeTab === item.id ? 'text-white scale-110' : 'text-[#71717A]'}`} />
-              {activeTab === item.id && <div className="absolute bottom-2 w-1.5 h-1.5 rounded-full bg-[var(--theme-color)] shadow-md shadow-[var(--theme-color)]/50" />}
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      <div className="fixed top-8 left-0 right-0 z-[110] flex flex-col items-center gap-2 pointer-events-none px-6">
-        {toasts.map(t => (
-          <div key={t.id} className="bg-[rgba(15,15,18,0.95)] backdrop-blur-[24px] rounded-full py-3.5 px-5 border border-white/10 flex items-center gap-3 animate-in slide-in-from-top-6 font-bold text-[10px] max-w-xs w-full text-white uppercase shadow-2xl">
-             <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[var(--theme-color)]"><Zap size={12} className="text-white fill-white" /></div>
-             {t.msg}
-          </div>
-        ))}
+    <div className="min-h-screen bg-[#030303] text-white font-body flex justify-center overflow-hidden antialiased selection:bg-blue-500/30 relative">
+      <InjectedStyles />
+      
+      {/* Universal Background Setup */}
+      <div className="absolute inset-0 z-0 bg-grid opacity-10 pointer-events-none" />
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+         <GlowingOrb color="rgba(0, 240, 255, 0.15)" size="600px" className="top-0 -left-40" />
+         <GlowingOrb color="rgba(255, 0, 255, 0.1)" size="500px" className="bottom-0 -right-20 animate-drift" style={{ animationDelay: '-5s' }} />
       </div>
 
-      {particles.map(p => {
-        const Icon = p.icon;
-        return <div key={p.id} className="particle" style={{ left: p.x, top: p.y, '--tx': p.tx, '--ty': p.ty, '--rot': p.rot, '--life': p.life, color: p.color } as any}><Icon size={p.size} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" /></div>;
-      })}
-    </div>
-  );
-}
+      {/* Main Mobile/App Container */}
+      <div className="w-full max-w-[428px] h-[100dvh] relative flex flex-col z-10 bg-[#050505]/40 backdrop-blur-[80px] shadow-[0_0_100px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.05)] border-x border-white/[0.05] transform-gpu">
+        
+        {/* Main Scrollable Area */}
+        <main className="flex-1 overflow-y-auto no-scrollbar px-6 pt-14">
+          {activeTab === 'Dashboard' && <DashboardTab userData={userData} tasks={tasks} setTasks={setTasks} addXP={addXP} />}
+          {activeTab === 'Tasks' && <TasksTab tasks={tasks} setTasks={setTasks} addXP={addXP} />}
+          {activeTab === 'Goals' && <GoalsTab goals={goals} setGoals={setGoals} addXP={addXP} />}
+          {activeTab === 'Notes' && <NotesTab notes={notes} setNotes={setNotes} showToast={showToast} />}
+          {activeTab === 'Stats' && <StatsTab 
+            userData={userData} habits={habits} showToast={showToast}
+            handleExport={handleExport} handleImport={handleImport} fileInputRef={fileInputRef}
+          />}
+        </main>
 
-export default function App() {
-  return (
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
+        {/* Dynamic Island Floating Bottom Navigation Dock */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] z-40">
+          <nav className="pointer-events-auto glass-card rounded-[2.5rem] p-2.5 shadow-[0_30px_60px_-12px_rgba(0,0,0,1)] border border-white/[0.1] bg-[#0a0a0a]/90">
+            <div className="flex justify-between items-center px-2">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                
+                // Make the middle item (Goals/Target) the prominent CTA button
+                if (tab.id === 'Goals') {
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-magenta-600 text-white flex items-center justify-center shadow-[0_0_25px_rgba(217,70,239,0.5)] mx-2 hover:scale-110 active:scale-95 transition-all relative z-20 border border-white/30"
+                    >
+                      <Icon size={28} />
+                    </button>
+                  )
+                }
+
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex flex-col items-center justify-center p-3.5 rounded-full transition-all duration-400 relative overflow-hidden group ${
+                      isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute inset-0 bg-white/10 rounded-full" />
+                    )}
+                    <div className={`relative ${isActive ? 'scale-110' : 'scale-100'} transition-transform duration-400 z-10`}>
+                      <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                      {isActive && (
+                        <div className="absolute inset-0 bg-blue-500/40 blur-[10px] rounded-full pointer-events-none" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+
+        {/* 3D Toast Notification */}
+        {toast && (
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 glass-card px-7 py-4 rounded-full flex items-center gap-4 z-50 animate-cinematic shadow-[0_20px_40px_rgba(0,0,0,0.9)] border border-blue-500/30 border-t-blue-400/50 bg-[#0a0a0a]/95 w-max">
+            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,1)] animate-pulse" />
+            <span className="text-white font-display font-bold text-[14px] tracking-wide">{toast}</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
