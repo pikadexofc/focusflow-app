@@ -14,6 +14,38 @@ export const Badge = ({ icon: Icon, text, colorClass = "from-zinc-800 to-zinc-90
   </div>
 );
 
+// Apple Human Interface Guidelines dynamic motion physics profiles:
+export const springPresets = {
+  // Snappy: standard interactive elements (buttons, segmented sliders, scale tap returns)
+  interactive: {
+    type: "spring" as const,
+    stiffness: 380,
+    damping: 30,
+    mass: 0.9
+  },
+  // Bouncy: expressive and micro-interactions (e.g., checks, XP badges, completion pops)
+  bouncy: {
+    type: "spring" as const,
+    stiffness: 320,
+    damping: 18,
+    mass: 0.8
+  },
+  // Fluid: structural state changes (tab indicators, expanding layouts, slide-in/out, list transitions)
+  fluid: {
+    type: "spring" as const,
+    stiffness: 260,
+    damping: 26,
+    mass: 1.0
+  },
+  // Swift: super fast transitions with minimal dampening offset (e.g. tooltips, quick indicator slides)
+  swift: {
+    type: "spring" as const,
+    stiffness: 450,
+    damping: 32,
+    mass: 0.8
+  }
+};
+
 interface SpatialCardProps {
   children: React.ReactNode;
   className?: string;
@@ -29,16 +61,18 @@ export const SpatialCard = ({ children, className = '', padding = 'p-6' }: Spati
     if (!card) return;
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const y = e.clientX - rect.top; // Keep vertical coordinates relative to client as well
+    const clientY = e.clientY - rect.top;
     card.style.setProperty('--mouse-x', `${x}px`);
-    card.style.setProperty('--mouse-y', `${y}px`);
+    card.style.setProperty('--mouse-y', `${clientY}px`);
   };
 
   return (
     <motion.div 
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileHover={{ y: -3, scale: 1.015 }}
+      transition={springPresets.interactive}
       className={`glass-card group relative overflow-hidden ${className}`}
     >
       {/* Subtle mouse spotlight */}
@@ -92,8 +126,9 @@ export const SpatialCard = ({ children, className = '', padding = 'p-6' }: Spati
 
 export const TactileButton = ({ children, onClick, className = '', disabled = false }: any) => (
   <motion.button 
-    whileHover={disabled ? {} : { scale: 1.01 }}
-    whileTap={disabled ? {} : { scale: 0.98 }}
+    whileHover={disabled ? {} : { scale: 1.015 }}
+    whileTap={disabled ? {} : { scale: 0.96 }}
+    transition={springPresets.interactive}
     disabled={disabled} 
     onClick={onClick} 
     className={`btn-tactile rounded-[1.25rem] py-3.5 px-4 font-display font-medium text-[14px] flex justify-center items-center gap-2 text-white/90 w-full ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}
@@ -104,8 +139,9 @@ export const TactileButton = ({ children, onClick, className = '', disabled = fa
 
 export const Primary3DButton = ({ children, onClick, className = '', disabled = false }: any) => (
   <motion.button 
-    whileHover={disabled ? {} : { scale: 1.01 }}
-    whileTap={disabled ? {} : { scale: 0.98 }}
+    whileHover={disabled ? {} : { scale: 1.015 }}
+    whileTap={disabled ? {} : { scale: 0.95 }}
+    transition={springPresets.interactive}
     disabled={disabled} 
     onClick={onClick} 
     className={`btn-primary-3d rounded-[1.25rem] py-4 px-4 font-display font-bold text-[15px] flex justify-center items-center gap-2 w-full tracking-wide ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${className}`}
@@ -129,7 +165,7 @@ export const SegmentedControl3D = ({ options, selected, onChange }: any) => (
             <motion.div 
               layoutId="activeSegment"
               className="absolute inset-0 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.15)] z-0" 
-              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              transition={springPresets.fluid}
             />
           )}
           <span className="relative z-10">{opt.label}</span>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Zap, Flame, Sparkles, Circle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { SpatialCard, ProgressRing, Badge } from './CommonUI';
+import { SpatialCard, ProgressRing, Badge, springPresets } from './CommonUI';
 import { getLocalDateStr, getTaskWeight, playSound } from '../utils';
 
 export const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCustomBuff, timeBurn, dailyProgressPct, goals = [], setGoals, showToast, executeTask }: any) => {
@@ -176,18 +176,19 @@ export const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, c
                  <motion.div 
                    layout
                    key={item.id}
-                   initial={{ opacity: 0, y: 15 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   exit={{ opacity: 0, scale: 0.95 }}
-                   transition={{ duration: 0.2 }}
-                   whileHover={{ scale: 1.01 }}
-                   whileTap={{ scale: 0.99 }}
+                   initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                   animate={{ opacity: 1, y: 0, scale: 1 }}
+                   exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                   transition={springPresets.fluid}
+                   whileHover={{ scale: 1.015 }}
+                   whileTap={{ scale: 0.98 }}
                    className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" 
                    style={{borderLeftColor: item.type === 'goal' ? '#a855f7' : item.priority === 'high' ? '#ff00ff' : item.priority === 'medium' ? '#00f0ff' : 'transparent'}}
                  >
                    <motion.button 
-                     whileHover={{ scale: 1.1 }}
+                     whileHover={{ scale: 1.15 }}
                      whileTap={{ scale: 0.9 }}
+                     transition={springPresets.interactive}
                      type="button" 
                      className="w-11 h-11 flex items-center justify-center -ml-2 -my-2"
                      onClick={(e) => {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Sparkles, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Badge, Primary3DButton } from './CommonUI';
+import { Badge, Primary3DButton, springPresets } from './CommonUI';
 
 export const NotesTab = ({ notes, setNotes, showToast }: any) => {
   const [newNote, setNewNote] = useState({ title: '', content: '' });
@@ -53,15 +53,17 @@ export const NotesTab = ({ notes, setNotes, showToast }: any) => {
             <motion.div 
               layout
               key={note.id} 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="glass-card p-6 border-t border-t-amber-500/30 hover:scale-[1.02] transition-transform relative group"
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95, y: -8 }}
+              transition={springPresets.fluid}
+              whileHover={{ scale: 1.02 }}
+              className="glass-card p-6 border-t border-t-amber-500/30 transition-shadow relative group"
             >
               <motion.button
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
+                transition={springPresets.interactive}
                 type="button"
                 onClick={() => deleteNote(note.id)}
                 className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-500/0 group-hover:bg-red-500/10 flex items-center justify-center text-zinc-600 group-hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"

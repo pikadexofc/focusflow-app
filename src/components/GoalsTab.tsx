@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { SpatialCard, Badge, Primary3DButton } from './CommonUI';
+import { SpatialCard, Badge, Primary3DButton, springPresets } from './CommonUI';
 import { getLocalDateStr } from '../utils';
 
 export const GoalsTab = ({ goals, setGoals, addXP }: any) => {
@@ -160,10 +160,10 @@ export const GoalsTab = ({ goals, setGoals, addXP }: any) => {
               <motion.div
                 layout
                 key={goal.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                transition={springPresets.fluid}
               >
                 <SpatialCard padding="p-8" className="border-t border-t-magenta-500/30">
                   <div className="flex justify-between items-start mb-8">

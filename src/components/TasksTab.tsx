@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Circle, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { SpatialCard, Badge, SegmentedControl3D } from './CommonUI';
+import { SpatialCard, Badge, SegmentedControl3D, springPresets } from './CommonUI';
 import { getLocalDateStr, format12Hour } from '../utils';
 
 export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) => {
@@ -92,17 +92,18 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
                 <motion.div 
                   layout
                   key={task.id} 
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
+                  initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                  transition={springPresets.fluid}
+                  whileHover={{ scale: 1.015 }}
+                  whileTap={{ scale: 0.98 }}
                   className="glass-card p-5 rounded-[1.5rem] flex items-center gap-4 group"
                 >
                   <motion.button 
-                    whileHover={{ scale: 1.1 }}
+                    whileHover={{ scale: 1.15 }}
                     whileTap={{ scale: 0.9 }}
+                    transition={springPresets.interactive}
                     type="button" 
                     onClick={(e) => executeTask(task, e)}
                     className="w-11 h-11 flex items-center justify-center -ml-2 -my-2"
@@ -134,6 +135,7 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                transition={springPresets.interactive}
                 type="button"
                 onClick={() => setTasks(tasks.filter((t: any) => !t.completed))}
                 className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400/60 hover:text-red-400 transition-colors bg-red-500/0 hover:bg-red-500/10 px-4 py-2.5 rounded-xl h-9 flex items-center"
