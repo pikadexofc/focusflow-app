@@ -1,10 +1,147 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  CheckCircle2, Circle, Plus, 
-  Target, FileText, BarChart2, Download, Upload,
-  Shield, ArrowRight, Moon, Pickaxe, Heart, Sliders,
-  Sparkles, Zap, Layers, ChevronRight
+  CheckCircle2, Circle, Plus, Target, FileText, BarChart2, Download, Upload,
+  Shield, ArrowRight, Moon, Pickaxe, Heart, Sliders, Sparkles, Zap, Layers, ChevronRight,
+  User, Flame, Loader2, BarChart3, Clock, Lock, LayoutGrid, Calendar, Check, Edit2, Save, X
 } from 'lucide-react';
+
+const STORAGE_KEY = 'focusflow_v1';
+const weightMap: any = { low: 1, medium: 2, high: 3 };
+const getTaskWeight = (priority: string) => {
+  const p = (priority || 'medium').toLowerCase();
+  return weightMap[p] || 2;
+};
+
+const loadData = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveData = (data: any) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("Local storage save failed:", e);
+  }
+};
+
+// --- ERROR BOUNDARY ---
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  errorMsg: string;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) { 
+    super(props); 
+    this.state = { hasError: false, errorMsg: '' }; 
+  }
+  static getDerivedStateFromError(error: Error) { 
+    return { hasError: true, errorMsg: error.message }; 
+  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) { 
+    console.error("FocusFlow Critical Error:", error, errorInfo); 
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center p-6 text-white text-center">
+          <Shield size={48} className="text-[#FF5A00] mb-4 opacity-50" />
+          <h1 className="text-2xl font-display font-bold mb-2">System Interruption</h1>
+          <p className="text-[#A1A1AA] text-sm mb-6 max-w-xs font-body">An unexpected anomaly occurred in the atmospheric engine. Please reboot the environment.</p>
+          <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="px-6 py-3 bg-white/10 rounded-full text-xs font-display font-bold uppercase tracking-widest hover:bg-white/20 transition-all">Reboot Core</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// --- AUDIO FEEDBACK SYNTHESIZER ---
+let audioCtx: AudioContext | null = null;
+const initAudio = () => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+};
+
+const playSound = (type: 'boot' | 'complete' | 'streak') => {
+  try {
+    initAudio();
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    
+    if (type === 'boot') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.5);
+      gainNode.gain.setValueAtTime(0.1, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.start(now); osc.stop(now + 0.5);
+    } else if (type === 'complete') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+      gainNode.gain.setValueAtTime(0.05, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.start(now); osc.stop(now + 0.15);
+    } else if (type === 'streak') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+      osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+      osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.4); // C6
+      gainNode.gain.setValueAtTime(0.08, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.start(now); osc.stop(now + 0.4);
+    }
+  } catch (e) {
+    console.warn("Audio Context failed to play sound:", e);
+  }
+};
+
+// --- CORE UTILITY FUNCTIONS ---
+const getOrdinal = (n: number) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+const format12Hour = (timeStr: string) => {
+  if (!timeStr) return '';
+  const [hStr, mStr] = timeStr.split(':');
+  const h = parseInt(hStr);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const displayH = h % 12 || 12;
+  return `${displayH}:${mStr} ${ampm}`;
+};
+
+const getLocalDateStr = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const hexToRgb = (hex: string) => {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 240, 255';
+};
 
 // ============================================================================
 // 1. GLOBAL STYLES & ANIMATIONS (Premium Commercial Design System)
@@ -101,13 +238,12 @@ export const InjectedStyles = () => (
     }
 
     .btn-primary-3d {
-      background: linear-gradient(180deg, var(--glow-blue) 0%, var(--glow-violet) 100%);
+      background: linear-gradient(180deg, var(--theme-color, var(--glow-blue)) 0%, var(--glow-violet) 100%);
       color: #ffffff;
       border-top: 1px solid rgba(255,255,255,0.6);
       border-bottom: 2px solid rgba(0,0,0,0.4);
       box-shadow: 
-        0 15px 35px -5px rgba(99, 102, 241, 0.5),
-        0 5px 15px rgba(0, 0, 0, 0.6),
+        0 8px 16px rgba(0, 0, 0, 0.6),
         inset 0 -2px 5px rgba(0, 0, 0, 0.2);
       transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       text-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -117,8 +253,7 @@ export const InjectedStyles = () => (
       color: #000;
       border-top: 1px solid #d9f99d;
       box-shadow: 
-        0 20px 40px -5px rgba(132, 204, 22, 0.4),
-        0 8px 20px rgba(0, 0, 0, 0.6);
+        0 12px 24px rgba(0, 0, 0, 0.7);
       transform: translateY(-2px);
       text-shadow: none;
     }
@@ -190,27 +325,6 @@ export const InjectedStyles = () => (
 // ============================================================================
 // 2. ELITE UI COMPONENTS
 // ============================================================================
-
-interface GlowingOrbProps {
-  color: string;
-  size: string;
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-const GlowingOrb = ({ color, size, className = '', style }: GlowingOrbProps) => (
-  <div 
-    className={`absolute rounded-full mix-blend-screen pointer-events-none animate-drift ${className}`}
-    style={{
-      width: size,
-      height: size,
-      background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
-      filter: 'blur(70px)',
-      ...style
-    }}
-  />
-);
-
 interface BadgeProps {
   icon?: React.ComponentType<{ size?: number; className?: string }>;
   text: string;
@@ -231,37 +345,31 @@ interface SpatialCardProps {
   showOrbs?: boolean;
 }
 
-const SpatialCard = ({ children, className = '', padding = 'p-6', showOrbs = false }: SpatialCardProps) => (
+const SpatialCard = ({ children, className = '', padding = 'p-6' }: SpatialCardProps) => (
   <div className={`glass-card ${className}`}>
-    {showOrbs && (
-      <>
-        <GlowingOrb color="rgba(0, 240, 255, 0.05)" size="150px" className="top-0 -left-10" />
-        <GlowingOrb color="rgba(255, 0, 255, 0.03)" size="200px" className="bottom-0 -right-10" />
-      </>
-    )}
     <div className={`relative z-10 ${padding}`}>
       {children}
     </div>
   </div>
 );
 
-const TactileButton = ({ children, onClick, className = '', disabled = false }) => (
+const TactileButton = ({ children, onClick, className = '', disabled = false }: any) => (
   <button disabled={disabled} onClick={onClick} className={`btn-tactile rounded-[1.25rem] py-3.5 px-4 font-display font-medium text-[14px] flex justify-center items-center gap-2 text-white/90 w-full ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}>
     {children}
   </button>
 );
 
-const Primary3DButton = ({ children, onClick, className = '', disabled = false }) => (
+const Primary3DButton = ({ children, onClick, className = '', disabled = false }: any) => (
   <button disabled={disabled} onClick={onClick} className={`btn-primary-3d rounded-[1.25rem] py-4 px-4 font-display font-bold text-[15px] flex justify-center items-center gap-2 w-full tracking-wide ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${className}`}>
     {children}
   </button>
 );
 
-const SegmentedControl3D = ({ options, selected, onChange }) => (
+const SegmentedControl3D = ({ options, selected, onChange }: any) => (
   <div className="flex p-1 glass-recessed rounded-[1.25rem] relative w-full">
-    {options.map(opt => (
+    {options.map((opt: any) => (
       <button
-        key={opt.id} onClick={() => onChange(opt.id)}
+        key={opt.id} type="button" onClick={() => onChange(opt.id)}
         className={`flex-1 py-2.5 text-[12px] font-display font-semibold rounded-xl transition-all duration-400 z-10 relative ${
           selected === opt.id ? 'text-black drop-shadow-sm' : 'text-zinc-500 hover:text-white'
         }`}
@@ -270,23 +378,23 @@ const SegmentedControl3D = ({ options, selected, onChange }) => (
       </button>
     ))}
     <div 
-      className="absolute top-1 bottom-1 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(99,102,241,0.4),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.4)] transition-all duration-500 z-0"
+      className="absolute top-1 bottom-1 bg-gradient-to-r from-[#00f0ff] to-[#6366f1] rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.15)] transition-all duration-500 z-0"
       style={{
         width: `calc(${100 / options.length}% - 4px)`,
-        left: `calc(${options.findIndex(o => o.id === selected) * (100 / options.length)}% + 2px)`
+        left: `calc(${options.findIndex((o: any) => o.id === selected) * (100 / options.length)}% + 2px)`
       }}
     />
   </div>
 );
 
-const ProgressRing = ({ progress, size = 60, stroke = 6, label, gradientId = "ringGradPrimary" }) => {
+const ProgressRing = ({ progress, size = 60, stroke = 6, label, gradientId = "ringGradPrimary" }: any) => {
   const radius = (size - stroke) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;
 
   return (
     <div className="flex flex-col items-center justify-center relative">
-      <svg width={size} height={size} className="transform -rotate-90 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+      <svg width={size} height={size} className="transform -rotate-90">
         <defs>
           <linearGradient id="ringGradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#00f0ff" />
@@ -316,18 +424,18 @@ const ProgressRing = ({ progress, size = 60, stroke = 6, label, gradientId = "ri
 };
 
 // ============================================================================
-// 3. CINEMATIC ONBOARDING (16-Step Psychological Ritual from Document)
+// 3. CINEMATIC ONBOARDING (16-Step Psychological Ritual)
 // ============================================================================
-const Onboarding = ({ onComplete }) => {
+const Onboarding = ({ onComplete }: any) => {
   const [step, setStep] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   const [name, setName] = useState('');
   const [inputText, setInputText] = useState('');
-  const [habits, setHabits] = useState([]);
-  const [goals, setGoals] = useState([]);
+  const [habits, setHabits] = useState<any[]>([]);
+  const [goals, setGoals] = useState<any[]>([]);
   
-  const [selectedHabitId, setSelectedHabitId] = useState(null);
+  const [selectedHabitId, setSelectedHabitId] = useState<any>(null);
   const [deepDiveText, setDeepDiveText] = useState('');
 
   const handleNext = () => {
@@ -339,7 +447,7 @@ const Onboarding = ({ onComplete }) => {
     }, 1000); 
   };
 
-  const addItem = (listSetter, list) => {
+  const addItem = (listSetter: any, list: any[]) => {
     if (!inputText.trim()) return;
     listSetter([{ id: Date.now(), text: inputText }, ...list]);
     setInputText('');
@@ -359,10 +467,6 @@ const Onboarding = ({ onComplete }) => {
 
   return (
     <div className="h-full flex flex-col px-8 pt-20 pb-16 relative z-10 overflow-hidden">
-      
-      {/* Ambient Onboarding Backgrounds */}
-      <GlowingOrb color="rgba(0, 240, 255, 0.15)" size="400px" className="top-0 -left-20" />
-      <GlowingOrb color="rgba(255, 0, 255, 0.1)" size="500px" className="bottom-0 -right-20 animate-drift" style={{ animationDelay: '-3s' }} />
 
       <div key={step} className={`flex-1 flex flex-col relative z-10 ${isTransitioning ? 'animate-cinematic-out pointer-events-none' : ''}`}>
         
@@ -372,7 +476,7 @@ const Onboarding = ({ onComplete }) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Hello, and welcome.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">The outside world can feel very loud.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Here, there’s no judgment and no hurry.</p>
-            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-3000">Take off your mask and relax. This is your space – you control it.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-3000">Take off your mask and relax. This is your space, you control it.</p>
             <p className="text-sm font-body text-blue-400/80 animate-cinematic delay-4000">Feel free to pause or step away anytime.</p>
             <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-5000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
           </div>
@@ -403,11 +507,11 @@ const Onboarding = ({ onComplete }) => {
                     type="text" placeholder="Your name..."
                     className="w-full bg-transparent text-white text-2xl outline-none font-display placeholder:text-zinc-700 relative z-10"
                     value={name} onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleNext()}
+                    onKeyDown={(e) => e.key === 'Enter' && name.trim() && handleNext()}
                   />
                 </div>
               </div>
-              <Primary3DButton onClick={handleNext}>Continue</Primary3DButton>
+              <Primary3DButton onClick={handleNext} disabled={!name.trim()}>Continue</Primary3DButton>
               <p className="text-center text-xs text-zinc-500 mt-6 font-body animate-cinematic delay-1500">This space is yours, and you can always change it later.</p>
             </div>
           </div>
@@ -420,7 +524,7 @@ const Onboarding = ({ onComplete }) => {
               <Badge text="SECURE" icon={Shield} colorClass="bg-blue-900/40 border-blue-500/30 text-blue-300" />
             </div>
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Nice to meet you, {name || 'there'}.</h2>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">This is your private space – you’re in complete control.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">This is your private space, you’re in complete control.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-2000">Everything you write stays on this device.</p>
             <p className="text-xl font-display font-medium text-gradient gradient-lime-emerald animate-cinematic delay-3000">Nothing is ever sent to the cloud or shared. Your privacy is protected.</p>
             <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-4000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
@@ -431,7 +535,7 @@ const Onboarding = ({ onComplete }) => {
         {step === 4 && (
           <div className="flex-1 flex flex-col justify-center items-center text-center">
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Let’s try a different perspective.</h2>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Think of your mind as a hidden cave filled with treasures – ideas and strengths you haven’t discovered yet.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Think of your mind as a hidden cave filled with treasures, ideas and strengths you haven’t discovered yet.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-2000">It might feel a little dark or unfamiliar. That’s okay.</p>
             <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-cinematic delay-3000">Together we’ll turn on a light and explore gently.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-4000">
@@ -443,7 +547,7 @@ const Onboarding = ({ onComplete }) => {
         {/* Screen 6: The Setup */}
         {step === 5 && (
           <div className="flex-1 flex flex-col justify-center items-center text-center">
-            <h2 className="text-2xl font-display font-bold text-white mb-6 animate-cinematic">Let’s begin by noting anything you’d like to change or let go of – without judging yourself.</h2>
+            <h2 className="text-2xl font-display font-bold text-white mb-6 animate-cinematic">Let’s begin by noting anything you’d like to change or let go of, without judging yourself.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">It could be a habit, a feeling, or something you avoid (procrastination, anger, worry, etc.).</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Don’t feel ashamed; everyone struggles with something.</p>
             <p className="text-lg font-body font-medium text-amber-400/90 animate-cinematic delay-3000">Naming these things can actually make them feel lighter. Write quickly and honestly, without overthinking.</p>
@@ -464,9 +568,9 @@ const Onboarding = ({ onComplete }) => {
                   className="bg-transparent flex-1 px-4 outline-none text-white font-body text-sm placeholder:text-zinc-600"
                   placeholder="Example: procrastination, getting angry..."
                   value={inputText} onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addItem(setHabits, habits)}
+                  onKeyDown={(e) => e.key === 'Enter' && (addItem(setHabits, habits), setInputText(''))}
                 />
-                <button className="bg-gradient-to-r from-blue-500 to-violet-500 text-white p-3 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.5)] hover:scale-105 transition-transform" onClick={() => addItem(setHabits, habits)}>
+                <button type="button" className="bg-gradient-to-r from-blue-500 to-violet-500 text-white p-3 rounded-xl shadow-lg hover:scale-105 transition-transform" onClick={() => { addItem(setHabits, habits); setInputText(''); }}>
                   <Plus size={18} />
                 </button>
               </div>
@@ -474,13 +578,13 @@ const Onboarding = ({ onComplete }) => {
 
             {habits.length === 0 ? (
               <div className="text-center mt-4">
-                <p className="text-xs font-body text-zinc-500 animate-cinematic delay-1000">Write short bullet points. Don’t edit yourself – just get it out.</p>
+                <p className="text-xs font-body text-zinc-500 animate-cinematic delay-1000">Write short bullet points. Don’t edit yourself, just get it out.</p>
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3 pb-4">
                 {habits.map((h) => (
                   <div key={h.id} className="glass-card p-4 rounded-[1.25rem] flex items-center gap-4 animate-cinematic">
-                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-magenta-500 shadow-[0_0_8px_rgba(217,70,239,0.8)]" />
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-magenta-500" />
                     <span className="font-body text-sm text-zinc-200">{h.text}</span>
                   </div>
                 ))}
@@ -517,7 +621,7 @@ const Onboarding = ({ onComplete }) => {
             <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
               {habits.map((h) => (
                 <button 
-                  key={h.id} onClick={() => { setSelectedHabitId(h.id); handleNext(); }}
+                  key={h.id} type="button" onClick={() => { setSelectedHabitId(h.id); handleNext(); }}
                   className="glass-card p-6 rounded-[1.5rem] text-left border border-white/5 hover:border-magenta-500/50 transition-colors group relative overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-magenta-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -548,12 +652,12 @@ const Onboarding = ({ onComplete }) => {
               />
             </div>
             <div className="mt-6 space-y-1.5 text-center text-[12px] font-body text-zinc-500">
-              <p>Let your thoughts pour out naturally – don’t worry about editing.</p>
+              <p>Let your thoughts pour out naturally, don’t worry about editing.</p>
               <p>You might ask yourself: 'Why does this happen? What is it protecting me from? Am I angry or afraid of something?'</p>
             </div>
             
             <div className="pt-6 mt-auto">
-              <Primary3DButton onClick={handleNext}>Save Story</Primary3DButton>
+              <Primary3DButton onClick={handleNext} disabled={!deepDiveText.trim()}>Save Story</Primary3DButton>
             </div>
           </div>
         )}
@@ -564,7 +668,7 @@ const Onboarding = ({ onComplete }) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Take a breath and read over what you wrote.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Everything you wrote is human and understandable.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">These thoughts and feelings are real parts of you, and bringing them into the light is a brave act.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-lime-emerald animate-cinematic delay-3000">There’s nothing ‘wrong’ or disgusting here – it just shows you care about improving. Treat yourself with the same kindness you’d offer a friend.</p>
+            <p className="text-xl font-display font-medium text-gradient gradient-lime-emerald animate-cinematic delay-3000">There’s nothing wrong or disgusting here, it just shows you care about improving. Treat yourself with the same kindness you’d offer a friend.</p>
             <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-4000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
           </div>
         )}
@@ -574,7 +678,7 @@ const Onboarding = ({ onComplete }) => {
           <div className="flex-1 flex flex-col justify-center items-center text-center">
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">How do you feel right now?</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1000">Maybe a little lighter or proud?</p>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Confronting this is powerful—it takes courage.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Confronting this is powerful, it takes courage.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-3000">It often feels more satisfying than trying to avoid the issue.</p>
             <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-cinematic delay-4000">You’re doing the hard work now, and you have everything you need to keep going.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-5000">
@@ -591,7 +695,7 @@ const Onboarding = ({ onComplete }) => {
               <Moon size={40} className="text-white relative z-10" />
             </div>
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic delay-1000">Now imagine yourself years from today.</h2>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">If things stay the same, those habits will still be running your life – what might that life look like?</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">If things stay the same, those habits will still be running your life, what might that life look like?</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-3000">Remember, big changes come from small steps over time.</p>
             <p className="text-xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-emerald-500 mb-12 animate-cinematic delay-4000 drop-shadow-lg">The door isn’t closed on you: you can start changing course today. You’re exactly where you need to be.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-5000">
@@ -604,7 +708,7 @@ const Onboarding = ({ onComplete }) => {
         {step === 13 && (
           <div className="flex-1 flex flex-col h-full animate-cinematic pt-8">
             <h2 className="text-2xl font-display font-bold text-white mb-2">What would you do differently from now on?</h2>
-            <p className="text-sm font-body text-zinc-400 mb-6">List the goals or changes you want in your life – even small ones. (They don’t all have to happen, just focus on enough to move in a better direction.)</p>
+            <p className="text-sm font-body text-zinc-400 mb-6">List the goals or changes you want in your life, even small ones. (They don’t all have to happen, just focus on enough to move in a better direction.)</p>
             
             <div className="glass-card p-[1px] mb-6">
               <div className="bg-black/50 rounded-[2rem] p-2 flex items-center">
@@ -612,9 +716,9 @@ const Onboarding = ({ onComplete }) => {
                   className="bg-transparent flex-1 px-4 outline-none text-white font-body text-sm placeholder:text-zinc-600"
                   placeholder="e.g. Read 10 pages, sleep earlier..."
                   value={inputText} onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addItem(setGoals, goals)}
+                  onKeyDown={(e) => e.key === 'Enter' && (addItem(setGoals, goals), setInputText(''))}
                 />
-                <button className="bg-gradient-to-r from-lime-400 to-green-500 text-black p-3 rounded-xl shadow-[0_0_15px_rgba(132,204,22,0.5)] hover:scale-105 transition-transform" onClick={() => addItem(setGoals, goals)}>
+                <button type="button" className="bg-gradient-to-r from-lime-400 to-green-500 text-black p-3 rounded-xl shadow-lg hover:scale-105 transition-transform" onClick={() => { addItem(setGoals, goals); setInputText(''); }}>
                   <Plus size={18} />
                 </button>
               </div>
@@ -629,7 +733,7 @@ const Onboarding = ({ onComplete }) => {
             <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-3 pb-4">
               {goals.map((g) => (
                 <div key={g.id} className="glass-card p-4 rounded-[1.25rem] flex items-center gap-4 animate-cinematic">
-                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-lime-400 to-green-500 shadow-[0_0_8px_rgba(132,204,22,0.8)]" />
+                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-lime-400 to-green-500" />
                   <span className="font-body text-sm text-zinc-200">{g.text}</span>
                 </div>
               ))}
@@ -667,7 +771,7 @@ const Onboarding = ({ onComplete }) => {
                 <CheckCircle2 className="text-blue-400" size={24} />
                 <div>
                   <span className="text-md font-display font-bold text-white block">Tasks</span>
-                  <span className="text-xs font-body text-zinc-400">are your daily actions – the little stones you move.</span>
+                  <span className="text-xs font-body text-zinc-400">are your daily actions, the little stones you move.</span>
                 </div>
               </div>
               <div className="glass-recessed p-4 rounded-2xl flex items-center gap-4 text-left">
@@ -694,7 +798,7 @@ const Onboarding = ({ onComplete }) => {
             </div>
 
             <p className="text-xs font-display text-blue-300/80 uppercase tracking-widest animate-cinematic delay-3000 mb-2">Everything is stored only on your device (no internet needed).</p>
-            <p className="text-lg font-display font-bold text-white animate-cinematic delay-4000 mb-8">You’re ready to start—go at your own pace.</p>
+            <p className="text-lg font-display font-bold text-white animate-cinematic delay-4000 mb-8">You’re ready to start, go at your own pace.</p>
             
             <div className="absolute bottom-6 w-full animate-cinematic delay-5000">
               <Primary3DButton onClick={finishOnboarding} disabled={isTransitioning}>
@@ -712,62 +816,88 @@ const Onboarding = ({ onComplete }) => {
 // 4. MAIN APP TABS (UI Upgraded, Logic Intact)
 // ============================================================================
 
-const DashboardTab = ({ userData, tasks, setTasks, addXP }) => {
-  const activeTasks = tasks.filter(t => !t.completed);
-  const completedTasks = tasks.filter(t => t.completed);
-  
-  const weightMap = { low: 1, medium: 2, high: 3 };
-  const totalWeight = tasks.reduce((sum, t) => sum + weightMap[t.priority], 0) || 1;
-  const completedWeight = completedTasks.reduce((sum, t) => sum + weightMap[t.priority], 0);
-  const executionPercent = Math.min(100, Math.round((completedWeight / totalWeight) * 100));
+const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, claimCustomBuff, timeBurn, dailyProgressPct }: any) => {
+  const activeTasks = tasks.filter((t: any) => !t.completed);
+  const curDateStr = getLocalDateStr();
 
-  const now = new Date();
-  const dayProgress = (now.getHours() / 24) * 100;
-  const monthProgress = (now.getDate() / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) * 100;
-  const yearProgress = (now.getMonth() / 12) * 100;
 
   return (
     <div className="space-y-6 pb-32 animate-cinematic">
       <header className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-[1.25rem] bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-[0_0_20px_rgba(217,70,239,0.4)] border border-white/20">
-            <span className="font-display font-bold text-2xl text-white drop-shadow-md">{userData.name.charAt(0)}</span>
+          <div className="w-14 h-14 rounded-[1.25rem] bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-lg border border-white/20">
+            <span className="font-display font-bold text-2xl text-white drop-shadow-md">{userData.codename?.charAt(0) || 'U'}</span>
           </div>
           <div>
-            <h1 className="text-2xl font-display font-bold text-white leading-none tracking-tight">Agent {userData.name}</h1>
+            <h1 className="text-2xl font-display font-bold text-white leading-none tracking-tight">Agent {userData.codename}</h1>
             <p className="text-[10px] font-display text-blue-400 uppercase tracking-widest mt-1.5 font-bold">Survive one more day</p>
           </div>
         </div>
-        <div className="glass-recessed px-5 py-3 rounded-[1.5rem] border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)] text-center min-w-[80px]">
-          <span className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-magenta-400 drop-shadow-sm">{userData.xp}</span>
+        <div className="glass-recessed px-5 py-3 rounded-[1.5rem] border border-blue-500/20 shadow-md text-center min-w-[80px]">
+          <span className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-blue-400 to-magenta-400 drop-shadow-sm">{userData.score}</span>
           <p className="text-[9px] text-zinc-500 font-display font-bold tracking-widest uppercase mt-1">Total XP</p>
         </div>
       </header>
 
       <SpatialCard padding="p-8" showOrbs={true}>
         <div className="flex justify-around items-center relative z-10">
-          <ProgressRing progress={dayProgress} label="Day" gradientId="ringGradAccent" />
+          <ProgressRing progress={timeBurn.day.pct} label="Day" gradientId="ringGradAccent" />
           <div className="relative">
-            <ProgressRing progress={monthProgress} label="Month" size={100} stroke={8} gradientId="ringGradPrimary" />
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full shadow-[0_0_15px_white] animate-pulse border-2 border-magenta-500" />
+            <ProgressRing progress={timeBurn.month.pct} label="Month" size={100} stroke={8} gradientId="ringGradPrimary" />
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full animate-pulse border-2 border-magenta-500" />
           </div>
-          <ProgressRing progress={yearProgress} label="Year" gradientId="ringGradLime" />
+          <ProgressRing progress={timeBurn.year.pct} label="Year" gradientId="ringGradLime" />
         </div>
       </SpatialCard>
 
       <div className="glass-card p-6 border-t border-t-blue-500/30 hover:scale-[1.01] transition-transform">
         <div className="flex justify-between text-[11px] font-display font-bold tracking-widest text-zinc-400 uppercase mb-4">
           <div className="flex items-center gap-2"><Zap size={16} className="text-blue-400"/> Execution Protocol</div>
-          <span className="text-white bg-white/10 px-2.5 py-1 rounded-lg shadow-inner">{executionPercent}%</span>
+          <span className="text-white bg-white/10 px-2.5 py-1 rounded-lg shadow-inner">{Math.round(dailyProgressPct)}%</span>
         </div>
         <div className="h-4 rounded-full bg-black shadow-[inset_0_4px_8px_rgba(0,0,0,1)] relative overflow-hidden border border-white/[0.05]">
           <div 
-            className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-magenta-500 shadow-[0_0_15px_rgba(217,70,239,0.8)] transition-all duration-1000 ease-out relative"
-            style={{ width: `${executionPercent}%` }}
+            className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-magenta-500 transition-all duration-1000 ease-out relative"
+            style={{ width: `${dailyProgressPct}%` }}
           >
             <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] opacity-60" />
           </div>
         </div>
+      </div>
+
+      {/* Reintroduced Custom Buffs Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {[
+          { key: 'buff1', data: buff1, icon: Flame, color: 'text-orange-400' },
+          { key: 'buff2', data: buff2, icon: Sparkles, color: 'text-violet-400' }
+        ].map((b, idx) => {
+          const isClaimed = b.data?.lastClaimed === curDateStr;
+          return (
+            <SpatialCard key={b.key} padding="p-4" className="flex flex-col justify-between min-h-[140px] border-t border-t-zinc-800">
+              <div className="flex justify-between items-start mb-3">
+                <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center bg-black/40 border border-white/10`}>
+                   <b.icon size={18} className={isClaimed ? 'text-zinc-600' : b.color} />
+                </div>
+                {!isClaimed && <span className="text-xs font-display font-bold text-zinc-400">+{b.data?.xp || 100} XP</span>}
+              </div>
+              <div>
+                 <h4 className="font-display text-[14px] font-bold text-white mb-2 leading-tight">{b.data?.title || 'Daily Buff'}</h4>
+                 <button 
+                   type="button"
+                   disabled={isClaimed}
+                   onClick={(e) => claimCustomBuff(b.key, b.data, e)} 
+                   className={`w-full py-2 rounded-xl text-[10px] font-display font-bold uppercase tracking-widest transition-all ${
+                     isClaimed 
+                       ? 'bg-white/5 text-zinc-600 cursor-not-allowed' 
+                       : 'bg-white/10 text-white hover:bg-white/20 active:scale-95'
+                   }`}
+                 >
+                   {isClaimed ? 'Claimed' : 'Activate'}
+                 </button>
+              </div>
+            </SpatialCard>
+          );
+        })}
       </div>
 
       <div>
@@ -778,12 +908,13 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {activeTasks.sort((a,b) => weightMap[b.priority] - weightMap[a.priority]).slice(0, 3).map(task => (
+            {activeTasks.sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority)).slice(0, 3).map((task: any) => (
               <div key={task.id} className="glass-card p-5 flex items-center gap-4 group cursor-pointer transition-all hover:bg-white/[0.05] border-l-4" style={{borderLeftColor: task.priority === 'high' ? '#ff00ff' : task.priority === 'medium' ? '#00f0ff' : 'transparent'}}>
-                <button onClick={(e) => {
+                <button type="button" onClick={(e) => {
                   e.stopPropagation();
-                  setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: true } : t));
-                  addXP(weightMap[task.priority] * 10);
+                  setTasks(tasks.map((t: any) => t.id === task.id ? { ...t, completed: true } : t));
+                  playSound('complete');
+                  addXP(getTaskWeight(task.priority) * 10);
                 }}>
                   <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-7 h-7" />
                 </button>
@@ -802,18 +933,32 @@ const DashboardTab = ({ userData, tasks, setTasks, addXP }) => {
   );
 };
 
-const TasksTab = ({ tasks, setTasks, addXP }) => {
+const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) => {
   const [newTask, setNewTask] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [taskGoalId, setTaskGoalId] = useState('');
+  const [taskDeadline, setTaskDeadline] = useState(getLocalDateStr());
+  const [taskTime, setTaskTime] = useState('');
 
   const handleAddTask = () => {
     if (!newTask.trim()) return;
-    setTasks([{ id: Date.now(), title: newTask, priority, completed: false }, ...tasks]);
+    setTasks([{ 
+      id: Date.now(), 
+      title: newTask, 
+      priority, 
+      goalId: taskGoalId || null,
+      deadline: taskDeadline,
+      time: taskTime,
+      completed: false 
+    }, ...tasks]);
     setNewTask('');
+    setTaskGoalId('');
+    setTaskDeadline(getLocalDateStr());
+    setTaskTime('');
   };
 
-  const activeTasks = tasks.filter(t => !t.completed);
-  const completedTasks = tasks.filter(t => t.completed);
+  const activeTasks = tasks.filter((t: any) => !t.completed);
+  const completedTasks = tasks.filter((t: any) => t.completed);
 
   return (
     <div className="space-y-6 pb-32 animate-cinematic h-full flex flex-col">
@@ -823,7 +968,7 @@ const TasksTab = ({ tasks, setTasks, addXP }) => {
       </div>
       
       <SpatialCard padding="p-6" className="shrink-0 border-t border-t-blue-500/30">
-        <div className="glass-recessed rounded-[1.25rem] p-4 mb-5 border border-white/[0.02] focus-within:border-blue-500/40 transition-colors shadow-inner">
+        <div className="glass-recessed rounded-[1.25rem] p-4 mb-4 border border-white/[0.02] focus-within:border-blue-500/40 transition-colors shadow-inner">
           <input 
             className="w-full bg-transparent text-white font-body text-[16px] outline-none placeholder:text-zinc-500"
             placeholder="Define next action..."
@@ -831,6 +976,23 @@ const TasksTab = ({ tasks, setTasks, addXP }) => {
             onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
           />
         </div>
+        
+        <div className="space-y-3 mb-4">
+          <div className="flex gap-2 items-center">
+            <input type="date" value={taskDeadline} onChange={(e) => setTaskDeadline(e.target.value)} className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-300 text-xs font-display outline-none focus:border-blue-500/40" />
+            <input type="time" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-300 text-xs font-display outline-none focus:border-blue-500/40" />
+          </div>
+
+          <div className="flex overflow-x-auto gap-2 pb-1 hide-scrollbar">
+            <button type="button" onClick={() => setTaskGoalId('')} className={`px-3 py-2 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border ${taskGoalId === '' ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>No Objective</button>
+            {goals.map((g: any) => (
+              <button key={g.id} type="button" onClick={() => setTaskGoalId(g.id)} className={`px-3 py-2 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border ${taskGoalId === g.id ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>
+                {g.title}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <SegmentedControl3D 
@@ -843,7 +1005,7 @@ const TasksTab = ({ tasks, setTasks, addXP }) => {
               onChange={setPriority}
             />
           </div>
-          <button className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-[0_0_20px_rgba(217,70,239,0.5)] text-white hover:scale-105 active:scale-95 transition-transform border border-white/20" onClick={handleAddTask}>
+          <button type="button" className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-lg text-white hover:scale-105 active:scale-95 transition-transform border border-white/20" onClick={handleAddTask}>
             <Plus size={24} />
           </button>
         </div>
@@ -853,17 +1015,17 @@ const TasksTab = ({ tasks, setTasks, addXP }) => {
         <div className="space-y-4">
           <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Active Targets</h2>
           {activeTasks.length === 0 && <p className="text-zinc-600 text-[14px] px-2 font-body">No tasks deployed.</p>}
-          {activeTasks.map(task => (
+          {activeTasks.map((task: any) => (
             <div key={task.id} className="glass-card p-5 rounded-[1.5rem] flex items-center gap-4 group">
-              <button onClick={() => {
-                setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: true } : t));
-                const weightMap = { low: 1, medium: 2, high: 3 };
-                addXP(weightMap[task.priority] * 10);
-              }}>
+              <button type="button" onClick={(e) => executeTask(task, e)}>
                 <Circle className="text-zinc-600 group-hover:text-blue-400 transition-colors w-7 h-7" />
               </button>
               <div className="flex-1">
                 <p className="text-white font-body text-[16px] font-medium leading-tight">{task.title}</p>
+                <span className="text-[9px] font-display font-bold text-zinc-500 uppercase tracking-wider block mt-1">
+                  {task.deadline === getLocalDateStr() ? 'Due Today' : `Due: ${task.deadline}`}
+                  {task.time ? ` at ${format12Hour(task.time)}` : ''}
+                </span>
               </div>
               <Badge text={task.priority} colorClass={
                 task.priority === 'high' ? 'bg-magenta-500/20 text-magenta-300 border-magenta-500/30' : 
@@ -877,7 +1039,7 @@ const TasksTab = ({ tasks, setTasks, addXP }) => {
         {completedTasks.length > 0 && (
           <div className="space-y-4 opacity-50">
             <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Cleared</h2>
-            {completedTasks.map(task => (
+            {completedTasks.map((task: any) => (
               <div key={task.id} className="glass-recessed p-5 rounded-[1.5rem] flex items-center gap-4">
                 <CheckCircle2 className="text-blue-400/40 w-6 h-6" />
                 <p className="text-zinc-500 font-body text-[15px] line-through leading-tight">{task.title}</p>
@@ -890,13 +1052,62 @@ const TasksTab = ({ tasks, setTasks, addXP }) => {
   );
 };
 
-const GoalsTab = ({ goals, setGoals, addXP }) => {
+const GoalsTab = ({ goals, setGoals, addXP }: any) => {
+  const [newGoalTitle, setNewGoalTitle] = useState('');
+  const [goalTarget, setGoalTarget] = useState<any>(30);
+  const [timeline, setTimeline] = useState('Daily');
+
+  const handleAddGoal = () => {
+    if (!newGoalTitle.trim()) return;
+    const safeTarget = Math.max(1, parseInt(goalTarget) || 1);
+    setGoals([{
+      id: Date.now(),
+      title: newGoalTitle,
+      timeline,
+      target: safeTarget,
+      current: 0,
+      createdAt: Date.now()
+    }, ...goals]);
+    setNewGoalTitle('');
+    setGoalTarget(30);
+    setTimeline('Daily');
+  };
+
   return (
     <div className="space-y-6 pb-32 animate-cinematic">
       <div className="px-2">
         <h1 className="text-4xl font-display font-bold text-white tracking-tighter mb-2">Milestones</h1>
         <p className="text-zinc-400 text-[14px] font-body">Automated recurring missions.</p>
       </div>
+
+      <SpatialCard padding="p-6" className="shrink-0 border-t border-t-magenta-500/30">
+        <h3 className="font-display font-bold text-[16px] text-white mb-4">Deploy Milestone</h3>
+        <div className="glass-recessed rounded-[1.25rem] p-4 mb-4 border border-white/[0.02] focus-within:border-magenta-500/40 transition-colors shadow-inner">
+          <input 
+            className="w-full bg-transparent text-white font-body text-[16px] outline-none placeholder:text-zinc-500"
+            placeholder="Objective..."
+            value={newGoalTitle} onChange={(e) => setNewGoalTitle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
+          />
+        </div>
+        <div className="flex gap-2 mb-4">
+          {['Daily', 'Weekly', 'Monthly'].map(t => (
+            <button key={t} type="button" onClick={() => setTimeline(t)} className={`flex-1 py-2.5 rounded-[12px] text-[10px] font-display font-bold uppercase tracking-widest border transition-colors ${timeline === t ? 'bg-white/10 text-white border-magenta-500/40' : 'bg-black/30 border-transparent text-zinc-500'}`}>{t}</button>
+          ))}
+        </div>
+        <div className="space-y-1.5 pt-1 mb-4">
+          <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest">Deployment Count</span>
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+            {[10, 20, 30, 40, 50].map(num => (
+              <button key={num} type="button" onClick={() => setGoalTarget(num)} className={`px-4 py-2.5 rounded-[12px] text-[11px] font-display font-bold shrink-0 transition-all border ${goalTarget == num ? 'bg-white/10 text-white border-magenta-500/40' : 'bg-black/30 border-transparent text-zinc-500'}`}>{num}</button>
+            ))}
+            <input type="number" min="1" value={goalTarget} onChange={(e: any) => setGoalTarget(e.target.value)} placeholder="Custom" className="w-20 px-3 py-2.5 rounded-[12px] bg-black/40 border border-white/10 text-white text-[11px] font-bold outline-none focus:border-magenta-500/40 shrink-0" />
+          </div>
+        </div>
+        <Primary3DButton onClick={handleAddGoal}>
+          <Target size={18} /> Deploy Goal
+        </Primary3DButton>
+      </SpatialCard>
 
       {goals.length === 0 && (
         <div className="text-center py-16 glass-recessed rounded-[2rem] text-zinc-500 font-body text-[15px] border border-white/[0.02]">
@@ -905,7 +1116,7 @@ const GoalsTab = ({ goals, setGoals, addXP }) => {
       )}
 
       <div className="space-y-6">
-        {goals.map(goal => {
+        {goals.map((goal: any) => {
           const progress = (goal.current / goal.target) * 100;
           const isComplete = goal.current >= goal.target;
           return (
@@ -913,7 +1124,7 @@ const GoalsTab = ({ goals, setGoals, addXP }) => {
               <div className="flex justify-between items-start mb-8">
                 <div>
                   <h3 className="text-white font-display font-bold text-2xl leading-tight mb-2">{goal.title}</h3>
-                  <Badge text={goal.frequency} colorClass="bg-magenta-500/10 text-magenta-300 border-magenta-500/20" />
+                  <Badge text={goal.timeline} colorClass="bg-magenta-500/10 text-magenta-300 border-magenta-500/20" />
                 </div>
                 <div className="glass-recessed px-5 py-3 rounded-2xl border border-white/5 text-center shadow-lg">
                   <span className="text-3xl font-display font-bold text-white leading-none">{goal.current}</span>
@@ -923,7 +1134,7 @@ const GoalsTab = ({ goals, setGoals, addXP }) => {
               
               <div className="h-4 glass-recessed rounded-full overflow-hidden p-[1px] mb-8 shadow-[inset_0_4px_8px_rgba(0,0,0,1)]">
                 <div 
-                  className={`h-full rounded-full transition-all duration-500 relative ${isComplete ? 'bg-magenta-500 shadow-[0_0_15px_rgba(217,70,239,0.9)]' : 'bg-gradient-to-r from-blue-500 to-magenta-500 shadow-[0_0_10px_rgba(217,70,239,0.6)]'}`}
+                  className={`h-full rounded-full transition-all duration-500 relative ${isComplete ? 'bg-magenta-500' : 'bg-gradient-to-r from-blue-500 to-magenta-500'}`}
                   style={{ width: `${Math.min(100, progress)}%` }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.5)_50%,transparent_100%)] opacity-60" />
@@ -934,7 +1145,7 @@ const GoalsTab = ({ goals, setGoals, addXP }) => {
                 disabled={isComplete}
                 onClick={() => {
                   if (!isComplete) {
-                    setGoals(goals.map(g => g.id === goal.id ? { ...g, current: g.current + 1 } : g));
+                    setGoals(goals.map((g: any) => g.id === goal.id ? { ...g, current: g.current + 1 } : g));
                     addXP(25);
                   }
                 }}
@@ -949,7 +1160,7 @@ const GoalsTab = ({ goals, setGoals, addXP }) => {
   );
 };
 
-const NotesTab = ({ notes, setNotes, showToast }) => {
+const NotesTab = ({ notes, setNotes, showToast }: any) => {
   const [newNote, setNewNote] = useState({ title: '', content: '' });
 
   const saveNote = () => {
@@ -966,7 +1177,7 @@ const NotesTab = ({ notes, setNotes, showToast }) => {
         <Badge text="PRIVATE" icon={Shield} colorClass="bg-white/10 text-white border-white/20" />
       </div>
       
-      {/* Sleek Frosted Glass Editor (Upgraded from Paper) */}
+      {/* Sleek Frosted Glass Editor */}
       <div className="glass-card rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-blue-500/20 relative shrink-0">
         <h3 className="font-display font-bold text-xl text-white mb-5 flex items-center gap-2">
           <Sparkles className="text-blue-400" size={20} /> New Reflection
@@ -989,7 +1200,7 @@ const NotesTab = ({ notes, setNotes, showToast }) => {
       <div className="flex-1 overflow-y-auto no-scrollbar space-y-5 pt-4">
         <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2">Archived</h2>
         {notes.length === 0 && <p className="text-zinc-600 text-[14px] px-2 font-body">Vault is empty.</p>}
-        {notes.map(note => (
+        {notes.map((note: any) => (
           <div key={note.id} className="glass-card p-6 border-t border-t-amber-500/30 hover:scale-[1.02] transition-transform">
             {note.title && <h3 className="text-white font-display font-bold text-xl mb-3">{note.title}</h3>}
             <p className="text-zinc-300 text-[15px] font-body leading-relaxed whitespace-pre-wrap">{note.content}</p>
@@ -1001,31 +1212,47 @@ const NotesTab = ({ notes, setNotes, showToast }) => {
   );
 };
 
-const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, handleImport }) => {
+const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, handleImport, currentTheme, changeTheme, yieldRange, setYieldRange, yieldData, maxYieldXP, rgbTheme }: any) => {
   return (
     <div className="space-y-6 pb-32 animate-cinematic">
       <h1 className="text-4xl font-display font-bold text-white px-2 tracking-tighter">System</h1>
       
       <SpatialCard padding="p-8" className="flex flex-col items-center text-center gap-6 border-t border-t-lime-500/40">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 via-green-500 to-blue-600 p-[3px] shadow-[0_0_30px_rgba(132,204,22,0.5)]">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-400 via-green-500 to-blue-600 p-[3px] shadow-xl" style={{ borderColor: currentTheme }}>
           <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
-            <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-lime-400 to-blue-500">{userData.name.charAt(0) || 'S'}</span>
+            <span className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-lime-400 to-blue-500">{userData.codename?.charAt(0) || 'U'}</span>
           </div>
         </div>
         <div>
-          <h2 className="text-3xl font-display font-bold text-white drop-shadow-md leading-tight">{userData.name}</h2>
+          <h2 className="text-3xl font-display font-bold text-white drop-shadow-md leading-tight">{userData.codename}</h2>
           <div className="mt-3 flex justify-center">
-            <Badge text={`Level ${Math.floor(userData.xp / 100) + 1} Cleanser`} colorClass="bg-lime-500/15 text-lime-400 border-lime-500/30 px-4 py-2 text-sm" />
+            <Badge text={`Level ${Math.floor(userData.score / 100) + 1} Operator`} colorClass="bg-lime-500/15 text-lime-400 border-lime-500/30 px-4 py-2 text-sm" />
           </div>
         </div>
       </SpatialCard>
+
+      {/* Reintroduced Theme Color Picker */}
+      <div className="glass-card p-6 border-t border-t-zinc-800">
+         <span className="text-[11px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest block mb-4">Core Theme Color</span>
+         <div className="flex gap-3 justify-center">
+           {['#00f0ff', '#6366f1', '#ff00ff', '#ccff00', '#ffaa00'].map(color => (
+              <button 
+                key={color} 
+                type="button"
+                onClick={() => changeTheme(color)} 
+                className={`w-9 h-9 rounded-full transition-transform hover:scale-110 active:scale-95 ${currentTheme === color ? 'ring-2 ring-white ring-offset-4 ring-offset-[#030303] scale-105' : ''}`} 
+                style={{ backgroundColor: color }} 
+              />
+           ))}
+         </div>
+      </div>
 
       <div className="space-y-4">
         <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mt-8">Data Protection</h2>
         <div className="glass-card p-3 space-y-2">
           <div className="p-5 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
             <div className="flex items-center gap-5">
-              <div className="w-12 h-12 rounded-[1rem] bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+              <div className="w-12 h-12 rounded-[1rem] bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
                 <Download size={20} />
               </div>
               <div>
@@ -1033,12 +1260,12 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
                 <p className="text-[12px] font-body text-zinc-500 mt-1">Save local data securely</p>
               </div>
             </div>
-            <button className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform" onClick={handleExport}>Export</button>
+            <button type="button" className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform" onClick={handleExport}>Export</button>
           </div>
 
           <div className="p-5 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
             <div className="flex items-center gap-5">
-              <div className="w-12 h-12 rounded-[1rem] bg-magenta-500/10 border border-magenta-500/30 flex items-center justify-center text-magenta-400 shadow-[0_0_15px_rgba(217,70,239,0.2)]">
+              <div className="w-12 h-12 rounded-[1rem] bg-magenta-500/10 border border-magenta-500/30 flex items-center justify-center text-magenta-400">
                 <Upload size={20} />
               </div>
               <div>
@@ -1046,17 +1273,83 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
                 <p className="text-[12px] font-body text-zinc-500 mt-1">Load previous .json file</p>
               </div>
             </div>
-            <button className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform" onClick={() => fileInputRef.current.click()}>Import</button>
+            <button type="button" className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform" onClick={() => fileInputRef.current.click()}>Import</button>
             <input type="file" accept=".json" ref={fileInputRef} className="hidden" onChange={handleImport} />
           </div>
         </div>
+      </div>
+
+      {/* Reintroduced Analytics Yield Charts */}
+      <div className="space-y-4">
+         <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mt-8">Analytics Yield</h2>
+         <SpatialCard padding="p-6" className="border-t border-t-zinc-800">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="font-display font-bold text-[16px] text-white">Action Matrix</h3>
+              <div className="flex gap-1 bg-white/5 p-1 rounded-xl">
+                 {['7d', '30d', '1y'].map(r => (
+                   <button key={r} type="button" onClick={() => setYieldRange(r)} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-display font-bold uppercase transition-colors ${yieldRange === r ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white'}`}>{r}</button>
+                 ))}
+              </div>
+            </div>
+            
+            {yieldRange === '7d' && (
+              <div className="flex items-end justify-between h-28 gap-2 pt-2">
+                {yieldData.map((d: any, i: number) => {
+                  const pct = Math.min((d.xp / Math.max(1, maxYieldXP)) * 100, 100);
+                  const isToday = i === yieldData.length - 1;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-2 justify-end h-full">
+                       <div className="w-full rounded-lg relative overflow-hidden bg-white/5" style={{ height: '100%' }}>
+                         <div className="absolute bottom-0 left-0 right-0 rounded-lg transition-all duration-1000 ease-out" 
+                              style={{ height: `${Math.max(pct, 6)}%`, background: `linear-gradient(to top, var(--theme-color, #00f0ff), #6366f1)` }} />
+                       </div>
+                       <span className={`text-[9px] font-display font-bold ${isToday ? 'text-white' : 'text-zinc-500'}`}>{d.date.toLocaleDateString('en-US', { weekday: 'short' })[0]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {yieldRange === '30d' && (
+              <div className="flex items-end justify-between h-28 gap-[3px] pt-2">
+                {yieldData.map((d: any, i: number) => {
+                  const pct = Math.min((d.xp / Math.max(1, maxYieldXP)) * 100, 100);
+                  const isToday = i === yieldData.length - 1;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                       <div className="w-full rounded-sm relative overflow-hidden bg-white/5" style={{ height: '100%' }}>
+                         <div className="absolute bottom-0 left-0 right-0 rounded-sm transition-all duration-1000" 
+                              style={{ height: `${Math.max(pct, 4)}%`, backgroundColor: isToday ? 'var(--theme-color, #00f0ff)' : '#6366f1' }} />
+                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {yieldRange === '1y' && (
+              <div className="flex flex-col gap-1 overflow-x-auto hide-scrollbar flex-row-reverse pb-1" dir="rtl">
+                 <div className="grid grid-rows-7 grid-flow-col gap-1.5" dir="ltr">
+                    {yieldData.map((d: any, i: number) => {
+                       const intensity = d.xp === 0 ? 0 : Math.max(0.15, d.xp / Math.max(1, maxYieldXP));
+                       return (
+                         <div key={i} className="w-[10px] h-[10px] rounded-sm transition-all" 
+                              style={{ backgroundColor: d.xp === 0 ? 'rgba(255,255,255,0.03)' : `rgba(${rgbTheme}, ${intensity})` }} 
+                              title={`${d.xp} XP on ${getLocalDateStr(d.date)}`}
+                         />
+                       );
+                    })}
+                 </div>
+              </div>
+            )}
+         </SpatialCard>
       </div>
 
       <div className="space-y-4">
         <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mt-8">Active Shadows</h2>
         <div className="glass-card p-4 space-y-3">
           {habits.length === 0 && <p className="text-zinc-500 text-[14px] px-4 py-3 font-body">No shadows recorded.</p>}
-          {habits.map((h, i) => (
+          {habits.map((h: any, i: number) => (
             <div key={i} className="px-5 py-4 glass-recessed rounded-[1.5rem] text-zinc-300 text-[15px] font-body flex items-center gap-4 border border-white/[0.02]">
               <Pickaxe size={18} className="text-zinc-500 shrink-0" />
               <span className="leading-relaxed font-medium">{h.text}</span>
@@ -1072,35 +1365,191 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
 // MAIN APP WRAPPER
 // ============================================================================
 export default function App() {
-  const [appState, setAppState] = useState('onboarding'); 
+  const [appData, setAppData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Dashboard');
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [particles, setParticles] = useState<any[]>([]);
+  const [processingTasks, setProcessingTasks] = useState(new Set());
+  
+  const [timeBurn, setTimeBurn] = useState({
+    day: { pct: 0, main: '0%', sub: '00:00' },
+    month: { pct: 0, main: '0%', sub: '1st' },
+    year: { pct: 0, main: '0%', sub: '1d' }
+  });
 
-  // Core Data State (In-Memory for strict local-first compliance)
-  const [userData, setUserData] = useState({ name: '', xp: 0 });
-  const [habits, setHabits] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [goals, setGoals] = useState([]);
-  const [notes, setNotes] = useState([]);
-  const fileInputRef = useRef(null);
+  const [yieldRange, setYieldRange] = useState('7d');
+  const fileInputRef = useRef<any>(null);
 
-  const showToast = (msg) => {
+  // Initialize and load from local storage
+  useEffect(() => {
+    const data = loadData();
+    if (data) {
+      if (!data.habits) data.habits = [];
+      if (!data.notes) data.notes = [];
+      if (!data.goals) data.goals = [];
+      if (!data.tasks) data.tasks = [];
+      if (data.profile && !data.profile.customBuffs) {
+        data.profile.customBuffs = {
+          buff1: { title: 'Extra Effort', xp: 100, lastClaimed: '' },
+          buff2: { title: 'Perfect Day', xp: 100, lastClaimed: '' }
+        };
+      }
+      setAppData(data);
+    } else {
+      const fresh = {
+        version: 1,
+        profile: {
+          booted: false,
+          codename: '',
+          directive: '',
+          score: 0,
+          xpLogs: {},
+          theme: '#00f0ff',
+          joinedAt: 0,
+          customBuffs: {
+            buff1: { title: 'Extra Effort', xp: 100, lastClaimed: '' },
+            buff2: { title: 'Perfect Day', xp: 100, lastClaimed: '' }
+          }
+        },
+        habits: [],
+        tasks: [],
+        goals: [],
+        notes: []
+      };
+      setAppData(fresh);
+      saveData(fresh);
+    }
+    setIsLoading(false);
+  }, []);
+
+  const updateAppData = (updater: any) => {
+    setAppData((prev: any) => {
+      if (!prev) return prev;
+      const updated = structuredClone(prev);
+      updater(updated);
+      saveData(updated);
+      return updated;
+    });
+  };
+
+  // Dynamic Progress Updates Hook (Runs every minute)
+  useEffect(() => {
+    let timerId: any;
+    const scheduleUpdate = () => {
+      const now = new Date();
+      const curMin = now.getHours() * 60 + now.getMinutes();
+      const dayPct = (curMin / 1440) * 100;
+      const daysInMo = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const moPct = ((now.getDate() - 1 + curMin/1440) / daysInMo) * 100;
+      const startOfYear = new Date(now.getFullYear(), 0, 0);
+      const diff = now.getTime() - startOfYear.getTime();
+      const exactDaysPassed = Math.floor(diff / (1000 * 60 * 60 * 24)) + (curMin / 1440);
+      const isLeap = (now.getFullYear() % 4 === 0 && now.getFullYear() % 100 !== 0) || now.getFullYear() % 400 === 0;
+      const yrPct = (exactDaysPassed / (isLeap ? 366 : 365)) * 100;
+
+      setTimeBurn({ 
+        day: { pct: dayPct, main: `${Math.floor(dayPct)}%`, sub: now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' }) }, 
+        month: { pct: moPct, main: `${Math.floor(moPct)}%`, sub: getOrdinal(now.getDate()) }, 
+        year: { pct: yrPct, main: `${Math.floor(yrPct)}%`, sub: Math.floor(exactDaysPassed) + 'd' } 
+      });
+      timerId = setTimeout(scheduleUpdate, 60000);
+    };
+    scheduleUpdate();
+    return () => clearTimeout(timerId);
+  }, []);
+
+  const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
 
-  const addXP = (amount) => {
-    setUserData(prev => ({ ...prev, xp: prev.xp + amount }));
+  const addXP = (amount: number) => {
+    const curDateStr = getLocalDateStr();
+    updateAppData((draft: any) => {
+      draft.profile.score += amount;
+      draft.profile.xpLogs[curDateStr] = (draft.profile.xpLogs[curDateStr] || 0) + amount;
+    });
     showToast(`+${amount} XP Earned`);
   };
 
+  const claimCustomBuff = (buffKey: string, buffObj: any, e: React.MouseEvent) => {
+    const curDateStr = getLocalDateStr();
+    if (buffObj.lastClaimed === curDateStr) return;
+    
+    playSound('streak');
+    spawnParticles(e, 'High');
+    
+    updateAppData((draft: any) => {
+      const buff = draft.profile.customBuffs[buffKey];
+      if (buff.lastClaimed === curDateStr) return;
+      buff.lastClaimed = curDateStr;
+      draft.profile.score += buff.xp;
+      draft.profile.xpLogs[curDateStr] = (draft.profile.xpLogs[curDateStr] || 0) + buff.xp;
+    });
+    showToast(`Claimed: ${buffObj.title}`);
+  };
+
+  const spawnParticles = (e: React.MouseEvent, priorityLevel: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const level = priorityLevel === 'High' || priorityLevel === 'high' ? 3 : priorityLevel === 'Medium' || priorityLevel === 'medium' ? 2 : 1;
+    const count = level * 8 + 8; 
+    
+    const themeColor = appData?.profile?.theme || '#00f0ff';
+
+    const newParticles = Array.from({ length: count }).map(() => {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 50 + Math.random() * (90 * level);
+      return {
+        id: Math.random() + Date.now(), x, y,
+        tx: `${Math.cos(angle) * dist}px`, ty: `${Math.sin(angle) * dist}px`,
+        rot: `${Math.random() * 360}deg`, life: `${0.5 + Math.random() * 0.5}s`,
+        icon: [Zap, Sparkles, Flame, Target][Math.floor(Math.random() * 4)],
+        color: [themeColor, '#6366f1', '#ff00ff', '#FFFFFF'][Math.floor(Math.random() * 4)],
+        size: 10 + Math.random() * 12
+      };
+    });
+    setParticles(prev => [...prev, ...newParticles].slice(-40));
+    setTimeout(() => setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id))), 1200);
+  };
+
+  const executeTask = (p: any, e: React.MouseEvent) => {
+    if (p.completed || processingTasks.has(p.id)) return;
+    setProcessingTasks(prev => new Set(prev).add(p.id)); 
+    playSound('complete');
+    spawnParticles(e, p.priority);
+    
+    const xp = getTaskWeight(p.priority) * 10;
+    
+    updateAppData((draft: any) => {
+      const task = draft.tasks.find((t: any) => t.id === p.id);
+      if (!task || task.completed) return;
+      task.completed = true;
+      task.completedAt = Date.now();
+      draft.profile.score += xp;
+      draft.profile.xpLogs[getLocalDateStr()] = (draft.profile.xpLogs[getLocalDateStr()] || 0) + xp;
+    });
+
+    setProcessingTasks(prev => { const s = new Set(prev); s.delete(p.id); return s; });
+    showToast(`Task complete (+${xp} XP)`);
+  };
+
+  const changeTheme = (color: string) => {
+    updateAppData((draft: any) => {
+      draft.profile.theme = color;
+    });
+    showToast("Theme recalibrated.");
+  };
+
   const handleExport = () => {
-    const data = { userData, habits, tasks, goals, notes };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    if (!appData) return;
+    const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ShadowCleanser_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `FocusFlow_Backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     showToast("Data exported securely.");
   };
@@ -1113,12 +1562,13 @@ export default function App() {
       try {
         if (typeof reader.result === 'string') {
           const data = JSON.parse(reader.result);
-          if (data.userData) setUserData(data.userData);
-          if (data.habits) setHabits(data.habits);
-          if (data.tasks) setTasks(data.tasks);
-          if (data.goals) setGoals(data.goals);
-          if (data.notes) setNotes(data.notes);
-          showToast("Identity Restored.");
+          if (data.profile) {
+            setAppData(data);
+            saveData(data);
+            showToast("Identity Restored.");
+          } else {
+            showToast("Invalid backup file.");
+          }
         }
       } catch (err) {
         showToast("Invalid backup file.");
@@ -1127,28 +1577,74 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  if (appState === 'onboarding') {
+  const getYieldData = (range: string) => {
+    const daysToMap = range === '7d' ? 7 : range === '30d' ? 30 : 365;
+    return Array.from({length: daysToMap}).map((_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - ((daysToMap - 1) - i));
+      const xp = appData?.profile?.xpLogs?.[getLocalDateStr(d)] || 0;
+      return { date: d, xp };
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#030303] flex items-center justify-center">
+        <Loader2 className="text-[#00f0ff] animate-spin" size={32} />
+      </div>
+    );
+  }
+
+  if (appData && !appData.profile.booted) {
     return (
       <div className="min-h-screen bg-[#030303] text-white font-body flex justify-center overflow-hidden antialiased selection:bg-blue-500/30 relative">
         <InjectedStyles />
         <div className="absolute inset-0 pointer-events-none bg-grid opacity-20 z-0" />
         <div className="w-full max-w-[428px] h-[100dvh] relative z-10 bg-[#030303]/80 shadow-[0_0_100px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.02)] border-x border-white/[0.04]">
-          <Onboarding onComplete={(data) => {
-            setUserData({ name: data.name, xp: 0 });
-            setHabits(data.habits);
-            setGoals(data.goals.map(g => ({ id: g.id, title: g.text, target: 30, current: 0, frequency: 'daily' })));
-            
-            // Integrate Deep Dive into Notes Vault
-            if (data.deepDiveNote) {
-              setNotes([{ id: Date.now(), ...data.deepDiveNote, date: new Date().toLocaleDateString() }]);
-            }
-            
-            setAppState('main');
+          <Onboarding onComplete={(data: any) => {
+            playSound('boot');
+            updateAppData((draft: any) => {
+              draft.profile.booted = true;
+              draft.profile.codename = data.name || 'User';
+              draft.profile.joinedAt = Date.now();
+              draft.habits = data.habits || [];
+              draft.goals = (data.goals || []).map((g: any) => ({
+                id: g.id,
+                title: g.text,
+                timeline: 'Daily',
+                target: 30,
+                current: 0,
+                createdAt: Date.now()
+              }));
+              if (data.deepDiveNote) {
+                draft.notes.unshift({
+                  id: Date.now(),
+                  title: data.deepDiveNote.title,
+                  content: data.deepDiveNote.content,
+                  createdAt: Date.now(),
+                  date: new Date().toLocaleDateString()
+                });
+              }
+            });
           }} />
         </div>
       </div>
     );
   }
+
+  const currentTheme = appData?.profile?.theme || '#00f0ff';
+  const yieldData = getYieldData(yieldRange);
+  const maxYieldXP = Math.max(...Object.values(appData?.profile?.xpLogs || {}).map(v => Number(v)), 100);
+  const rgbTheme = hexToRgb(currentTheme);
+
+  // Compute execution progress for today
+  const curDateStr = getLocalDateStr();
+  const todayTasks = (appData?.tasks || []).filter((t: any) => t.deadline === curDateStr || (!t.completed && t.deadline < curDateStr));
+  const totalWeight = todayTasks.reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
+  const completedWeight = todayTasks.filter((t: any) => t.completed).reduce((sum: number, t: any) => sum + getTaskWeight(t.priority), 0);
+  const dailyProgressPct = totalWeight === 0 ? 0 : (completedWeight / totalWeight) * 100;
+
+  const buff1 = appData?.profile?.customBuffs?.buff1 || { title: 'Extra Effort', xp: 100, lastClaimed: '' };
+  const buff2 = appData?.profile?.customBuffs?.buff2 || { title: 'Perfect Day', xp: 100, lastClaimed: '' };
 
   const tabs = [
     { id: 'Dashboard', icon: BarChart2 },
@@ -1159,84 +1655,133 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white font-body flex justify-center overflow-hidden antialiased selection:bg-blue-500/30 relative">
-      <InjectedStyles />
-      
-      {/* Universal Background Setup */}
-      <div className="absolute inset-0 z-0 bg-grid opacity-10 pointer-events-none" />
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-         <GlowingOrb color="rgba(0, 240, 255, 0.15)" size="600px" className="top-0 -left-40" />
-         <GlowingOrb color="rgba(255, 0, 255, 0.1)" size="500px" className="bottom-0 -right-20 animate-drift" style={{ animationDelay: '-5s' }} />
-      </div>
-
-      {/* Main Mobile/App Container */}
-      <div className="w-full max-w-[428px] h-[100dvh] relative flex flex-col z-10 bg-[#050505]/40 backdrop-blur-[80px] shadow-[0_0_100px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.05)] border-x border-white/[0.05] transform-gpu">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-[#030303] text-white font-body flex justify-center overflow-hidden antialiased selection:bg-blue-500/30 relative" style={{ '--theme-color': currentTheme } as any}>
+        <InjectedStyles />
         
-        {/* Main Scrollable Area */}
-        <main className="flex-1 overflow-y-auto no-scrollbar px-6 pt-14">
-          {activeTab === 'Dashboard' && <DashboardTab userData={userData} tasks={tasks} setTasks={setTasks} addXP={addXP} />}
-          {activeTab === 'Tasks' && <TasksTab tasks={tasks} setTasks={setTasks} addXP={addXP} />}
-          {activeTab === 'Goals' && <GoalsTab goals={goals} setGoals={setGoals} addXP={addXP} />}
-          {activeTab === 'Notes' && <NotesTab notes={notes} setNotes={setNotes} showToast={showToast} />}
-          {activeTab === 'Stats' && <StatsTab 
-            userData={userData} habits={habits} showToast={showToast}
-            handleExport={handleExport} handleImport={handleImport} fileInputRef={fileInputRef}
-          />}
-        </main>
+        {/* Universal Background Setup */}
+        <div className="absolute inset-0 z-0 bg-grid opacity-10 pointer-events-none" />
 
-        {/* Dynamic Island Floating Bottom Navigation Dock */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] z-40">
-          <nav className="pointer-events-auto glass-card rounded-[2.5rem] p-2.5 shadow-[0_30px_60px_-12px_rgba(0,0,0,1)] border border-white/[0.1] bg-[#0a0a0a]/90">
-            <div className="flex justify-between items-center px-2">
-              {tabs.map(tab => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                
-                // Make the middle item (Goals/Target) the prominent CTA button
-                if (tab.id === 'Goals') {
+        {/* Main Mobile/App Container */}
+        <div className="w-full max-w-[428px] h-[100dvh] relative flex flex-col z-10 bg-[#050505]/40 backdrop-blur-[80px] shadow-[0_0_100px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.05)] border-x border-white/[0.05] transform-gpu">
+          
+          {/* Main Scrollable Area */}
+          <main className="flex-1 overflow-y-auto no-scrollbar px-6 pt-14">
+            {activeTab === 'Dashboard' && (
+              <DashboardTab 
+                userData={appData.profile} 
+                tasks={appData.tasks} 
+                setTasks={(tasks: any) => updateAppData((draft: any) => { draft.tasks = typeof tasks === 'function' ? tasks(draft.tasks) : tasks; })} 
+                addXP={addXP} 
+                buff1={buff1}
+                buff2={buff2}
+                claimCustomBuff={claimCustomBuff}
+                timeBurn={timeBurn}
+                dailyProgressPct={dailyProgressPct}
+              />
+            )}
+            {activeTab === 'Tasks' && (
+              <TasksTab 
+                tasks={appData.tasks} 
+                setTasks={(tasks: any) => updateAppData((draft: any) => { draft.tasks = typeof tasks === 'function' ? tasks(draft.tasks) : tasks; })} 
+                addXP={addXP} 
+                goals={appData.goals}
+                executeTask={executeTask}
+              />
+            )}
+            {activeTab === 'Goals' && (
+              <GoalsTab 
+                goals={appData.goals} 
+                setGoals={(goals: any) => updateAppData((draft: any) => { draft.goals = typeof goals === 'function' ? goals(draft.goals) : goals; })} 
+                addXP={addXP} 
+              />
+            )}
+            {activeTab === 'Notes' && (
+              <NotesTab 
+                notes={appData.notes} 
+                setNotes={(notes: any) => updateAppData((draft: any) => { draft.notes = typeof notes === 'function' ? notes(draft.notes) : notes; })} 
+                showToast={showToast} 
+              />
+            )}
+            {activeTab === 'Stats' && (
+              <StatsTab 
+                userData={appData.profile} 
+                habits={appData.habits} 
+                showToast={showToast}
+                handleExport={handleExport} 
+                fileInputRef={fileInputRef} 
+                handleImport={handleImport}
+                currentTheme={currentTheme}
+                changeTheme={changeTheme}
+                yieldRange={yieldRange}
+                setYieldRange={setYieldRange}
+                yieldData={yieldData}
+                maxYieldXP={maxYieldXP}
+                rgbTheme={rgbTheme}
+              />
+            )}
+          </main>
+
+          {/* Dynamic Island Floating Bottom Navigation Dock */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] z-40">
+            <nav className="pointer-events-auto glass-card rounded-[2.5rem] p-2.5 shadow-[0_30px_60px_-12px_rgba(0,0,0,1)] border border-white/[0.1] bg-[#0a0a0a]/90">
+              <div className="flex justify-between items-center px-2">
+                {tabs.map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  
+                  // Make the middle item (Goals/Target) the prominent CTA button
+                  if (tab.id === 'Goals') {
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-magenta-600 text-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.5)] mx-2 hover:scale-110 active:scale-95 transition-all relative z-20 border border-white/30"
+                      >
+                        <Icon size={28} />
+                      </button>
+                    )
+                  }
+
                   return (
                     <button
                       key={tab.id}
+                      type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 via-violet-500 to-magenta-600 text-white flex items-center justify-center shadow-[0_0_25px_rgba(217,70,239,0.5)] mx-2 hover:scale-110 active:scale-95 transition-all relative z-20 border border-white/30"
+                      className={`flex flex-col items-center justify-center p-3.5 rounded-full transition-all duration-400 relative overflow-hidden group ${
+                        isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
                     >
-                      <Icon size={28} />
-                    </button>
-                  )
-                }
-
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex flex-col items-center justify-center p-3.5 rounded-full transition-all duration-400 relative overflow-hidden group ${
-                      isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    {isActive && (
-                      <div className="absolute inset-0 bg-white/10 rounded-full" />
-                    )}
-                    <div className={`relative ${isActive ? 'scale-110' : 'scale-100'} transition-transform duration-400 z-10`}>
-                      <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                       {isActive && (
-                        <div className="absolute inset-0 bg-blue-500/40 blur-[10px] rounded-full pointer-events-none" />
+                        <div className="absolute inset-0 bg-white/10 rounded-full" />
                       )}
-                    </div>
-                  </button>
-                );
-              })}
+                      <div className={`relative ${isActive ? 'scale-110' : 'scale-100'} transition-transform duration-400 z-10`}>
+                        <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+
+          {/* 3D Toast Notification */}
+          {toast && (
+            <div className="absolute top-14 left-1/2 -translate-x-1/2 glass-card px-7 py-4 rounded-full flex items-center gap-4 z-50 animate-cinematic shadow-[0_20px_40px_rgba(0,0,0,0.9)] border border-blue-500/30 border-t-blue-400/50 bg-[#0a0a0a]/95 w-max">
+              <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-white font-display font-bold text-[14px] tracking-wide">{toast}</span>
             </div>
-          </nav>
+          )}
         </div>
 
-        {/* 3D Toast Notification */}
-        {toast && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 glass-card px-7 py-4 rounded-full flex items-center gap-4 z-50 animate-cinematic shadow-[0_20px_40px_rgba(0,0,0,0.9)] border border-blue-500/30 border-t-blue-400/50 bg-[#0a0a0a]/95 w-max">
-            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,1)] animate-pulse" />
-            <span className="text-white font-display font-bold text-[14px] tracking-wide">{toast}</span>
-          </div>
-        )}
+        {/* Reintroduced Completion Particle Rendering */}
+        {particles.map(p => {
+          const Icon = p.icon;
+          return <div key={p.id} className="particle" style={{ left: p.x, top: p.y, '--tx': p.tx, '--ty': p.ty, '--rot': p.rot, '--life': p.life, color: p.color } as any}><Icon size={p.size} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" /></div>;
+        })}
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }
