@@ -592,7 +592,7 @@ const Onboarding = ({ onComplete }: any) => {
             )}
             
             <div className="pt-4 mt-auto">
-              <Primary3DButton onClick={handleNext} disabled={habits.length === 0 && inputText.length === 0}>
+              <Primary3DButton onClick={handleNext}>
                 {habits.length > 0 ? "Next Step" : "Skip for now"}
               </Primary3DButton>
             </div>
@@ -740,7 +740,7 @@ const Onboarding = ({ onComplete }: any) => {
             </div>
             
             <div className="pt-4 mt-auto">
-              <Primary3DButton onClick={handleNext} disabled={goals.length === 0 && inputText.length === 0}>{goals.length > 0 ? "Continue" : "Skip for now"}</Primary3DButton>
+              <Primary3DButton onClick={handleNext}>{goals.length > 0 ? "Continue" : "Skip for now"}</Primary3DButton>
             </div>
           </div>
         )}
@@ -983,7 +983,7 @@ const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) => {
             <input type="time" value={taskTime} onChange={(e) => setTaskTime(e.target.value)} className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-300 text-xs font-display outline-none focus:border-blue-500/40" />
           </div>
 
-          <div className="flex overflow-x-auto gap-2 pb-1 hide-scrollbar">
+          <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar">
             <button type="button" onClick={() => setTaskGoalId('')} className={`px-3 py-2 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border ${taskGoalId === '' ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>No Objective</button>
             {goals.map((g: any) => (
               <button key={g.id} type="button" onClick={() => setTaskGoalId(g.id)} className={`px-3 py-2 rounded-[12px] text-[10px] font-display font-bold whitespace-nowrap shrink-0 transition-all border ${taskGoalId === g.id ? 'bg-white/10 text-white border-blue-500/40' : 'bg-black/30 text-zinc-500 border-transparent hover:text-zinc-300'}`}>
@@ -1005,8 +1005,8 @@ const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) => {
               onChange={setPriority}
             />
           </div>
-          <button type="button" className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-lg text-white hover:scale-105 active:scale-95 transition-transform border border-white/20" onClick={handleAddTask}>
-            <Plus size={24} />
+          <button type="button" className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-magenta-600 flex items-center justify-center shadow-lg text-white hover:scale-105 active:scale-95 transition-transform border border-white/20" onClick={handleAddTask}>
+            <Plus size={20} />
           </button>
         </div>
       </SpatialCard>
@@ -1097,7 +1097,7 @@ const GoalsTab = ({ goals, setGoals, addXP }: any) => {
         </div>
         <div className="space-y-1.5 pt-1 mb-4">
           <span className="text-[10px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest">Deployment Count</span>
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {[10, 20, 30, 40, 50].map(num => (
               <button key={num} type="button" onClick={() => setGoalTarget(num)} className={`px-4 py-2.5 rounded-[12px] text-[11px] font-display font-bold shrink-0 transition-all border ${goalTarget == num ? 'bg-white/10 text-white border-magenta-500/40' : 'bg-black/30 border-transparent text-zinc-500'}`}>{num}</button>
             ))}
@@ -1234,7 +1234,7 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
       {/* Reintroduced Theme Color Picker */}
       <div className="glass-card p-6 border-t border-t-zinc-800">
          <span className="text-[11px] font-display font-bold text-[#A1A1AA] uppercase tracking-widest block mb-4">Core Theme Color</span>
-         <div className="flex gap-3 justify-center">
+         <div className="flex gap-3 justify-start">
            {['#00f0ff', '#6366f1', '#ff00ff', '#ccff00', '#ffaa00'].map(color => (
               <button 
                 key={color} 
@@ -1249,8 +1249,8 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
 
       <div className="space-y-4">
         <h2 className="text-[11px] font-display font-bold tracking-widest text-zinc-500 uppercase px-2 mt-8">Data Protection</h2>
-        <div className="glass-card p-3 space-y-2">
-          <div className="p-5 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
+        <div className="glass-card p-5 space-y-3">
+          <div className="p-4 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
             <div className="flex items-center gap-5">
               <div className="w-12 h-12 rounded-[1rem] bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
                 <Download size={20} />
@@ -1263,7 +1263,7 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
             <button type="button" className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform" onClick={handleExport}>Export</button>
           </div>
 
-          <div className="p-5 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
+          <div className="p-4 flex items-center justify-between bg-black/40 rounded-2xl hover:bg-black/60 transition-colors border border-white/[0.02]">
             <div className="flex items-center gap-5">
               <div className="w-12 h-12 rounded-[1rem] bg-magenta-500/10 border border-magenta-500/30 flex items-center justify-center text-magenta-400">
                 <Upload size={20} />
@@ -1328,7 +1328,7 @@ const StatsTab = ({ userData, habits, showToast, handleExport, fileInputRef, han
             )}
 
             {yieldRange === '1y' && (
-              <div className="flex flex-col gap-1 overflow-x-auto hide-scrollbar flex-row-reverse pb-1" dir="rtl">
+              <div className="flex flex-col gap-1 overflow-x-auto no-scrollbar flex-row-reverse pb-1" dir="rtl">
                  <div className="grid grid-rows-7 grid-flow-col gap-1.5" dir="ltr">
                     {yieldData.map((d: any, i: number) => {
                        const intensity = d.xp === 0 ? 0 : Math.max(0.15, d.xp / Math.max(1, maxYieldXP));
