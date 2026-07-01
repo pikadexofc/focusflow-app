@@ -199,19 +199,41 @@ export const InjectedStyles = () => (
     }
     
     @keyframes spatialReveal { 
-      0% { opacity: 0; transform: translateY(15px) scale(0.97); filter: blur(10px); } 
-      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
+      0% { opacity: 0; visibility: hidden; transform: translateY(15px) scale(0.97); filter: blur(10px); } 
+      1% { visibility: visible; }
+      100% { opacity: 1; visibility: visible; transform: translateY(0) scale(1); filter: blur(0px); } 
     }
     @keyframes spatialHide { 
       0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
       100% { opacity: 0; transform: translateY(-15px) scale(0.97); filter: blur(10px); } 
     }
 
+    /* Apple-style character-by-character typing reveal */
+    @keyframes typeReveal {
+      0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+      5%   { opacity: 1; }
+      100% { clip-path: inset(0 0% 0 0); opacity: 1; }
+    }
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
     .animate-float { animation: float 8s ease-in-out infinite; }
     .animate-drift { animation: drift 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); }
     
-    .animate-cinematic { animation: spatialReveal 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+    /* Base cinematic: fade + blur + translate reveal (all elements) */
+    .animate-cinematic { animation: spatialReveal 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; visibility: hidden; }
     .animate-cinematic-out { animation: spatialHide 1s cubic-bezier(0.8, 0, 0.8, 0.2) forwards; }
+
+    /* Typing reveal: used on highlighted gradient text lines in onboarding */
+    .animate-type {
+      display: inline-block;
+      clip-path: inset(0 100% 0 0);
+      opacity: 0;
+      visibility: hidden;
+      animation: typeReveal 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 
     /* Delays */
     .delay-500 { animation-delay: 500ms; }
