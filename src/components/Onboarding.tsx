@@ -68,7 +68,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Change often starts quietly.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">It doesn’t need to be loud or sudden.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-4000">First, let’s take a moment to be here now.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-type delay-6000">We’ll slow down and breathe.</p>
+            <p className="text-xl font-display font-medium text-cyan-400 animate-cinematic delay-6000">We'll slow down and breathe.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-8000">
               <TactileButton onClick={handleNext}>Take a breath</TactileButton>
             </div>
@@ -158,7 +158,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Nice to meet you, {name || 'there'}.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">This is your private space, you’re in complete control.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-4500">Everything you write stays on this device.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-lime-emerald animate-type delay-7000">Nothing is ever sent to the cloud or shared. Your privacy is protected.</p>
+            <p className="text-xl font-display font-medium text-emerald-400 animate-cinematic delay-7000">Nothing is ever sent to the cloud or shared. Your privacy is protected.</p>
             <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-9500 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
           </div>
         )}
@@ -169,7 +169,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Let’s try a different perspective.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Think of your mind as a hidden cave filled with treasures, ideas and strengths you haven’t discovered yet.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-5000">It might feel a little dark or unfamiliar. That’s okay.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-type delay-7500">Together we’ll turn on a light and explore gently.</p>
+            <p className="text-xl font-display font-medium text-sky-400 animate-cinematic delay-7500">Together we'll turn on a light and explore gently.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-9500">
               <TactileButton onClick={handleNext}>Turn on the light</TactileButton>
             </div>
@@ -182,7 +182,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-2xl font-display font-bold text-white mb-6 animate-cinematic">Let’s begin by noting anything you’d like to change or let go of, without judging yourself.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2500">It could be a habit, a feeling, or something you avoid (procrastination, anger, worry, etc.).</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-5000">Don’t feel ashamed; everyone struggles with something.</p>
-            <p className="text-lg font-body font-medium text-amber-400/90 animate-type delay-7500">Naming these things can actually make them feel lighter. Write quickly and honestly, without overthinking.</p>
+            <p className="text-lg font-body font-medium text-amber-400 animate-cinematic delay-7500">Naming these things can actually make them feel lighter. Write quickly and honestly, without overthinking.</p>
             <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-10500 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
           </div>
         )}
@@ -237,7 +237,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Now, slowly read through what you wrote.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Try not to judge yourself, just observe.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-4000">Notice if any item jumps out as particularly strong or important.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-magenta-orange animate-type delay-6000">That might be a good one to explore first. (We’ll focus on one thing at a time.)</p>
+            <p className="text-xl font-display font-medium text-fuchsia-400 animate-cinematic delay-6000">That might be a good one to explore first. (We'll focus on one thing at a time.)</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-8500">
               <TactileButton onClick={handleNext}>Observe</TactileButton>
             </div>
@@ -300,7 +300,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Take a breath and read over what you wrote.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Everything you wrote is human and understandable.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-4500">These thoughts and feelings are real parts of you, and bringing them into the light is a brave act.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-lime-emerald animate-type delay-7500">There’s nothing wrong or disgusting here, it just shows you care about improving. Treat yourself with the same kindness you’d offer a friend.</p>
+            <p className="text-xl font-display font-medium text-lime-400 animate-cinematic delay-7500">There's nothing wrong or disgusting here, it just shows you care about improving. Treat yourself with the same kindness you'd offer a friend.</p>
             <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-10500 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
           </div>
         )}
@@ -312,7 +312,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1500">Maybe a little lighter or proud?</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-3000">Confronting this is powerful, it takes courage.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-10 animate-cinematic delay-4500">It often feels more satisfying than trying to avoid the issue.</p>
-            <p className="text-xl font-display font-medium text-gradient gradient-cyan-blue animate-type delay-6500">You’re doing the hard work now, and you have everything you need to keep going.</p>
+            <p className="text-xl font-display font-medium text-violet-400 animate-cinematic delay-6500">You're doing the hard work now, and you have everything you need to keep going.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-8500">
               <TactileButton onClick={handleNext}>I am ready</TactileButton>
             </div>
@@ -329,7 +329,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-2xl font-display font-bold text-white mb-3 animate-cinematic delay-1500">Now imagine yourself years from today.</h2>
             <p className="text-[14px] font-body font-light text-zinc-400 mb-3 animate-cinematic delay-3500 leading-relaxed max-w-[320px]">If things stay the same, those habits will still be running your life, what might that life look like?</p>
             <p className="text-[14px] font-body font-light text-zinc-400 mb-4 animate-cinematic delay-6000 leading-relaxed max-w-[320px]">Remember, big changes come from small steps over time.</p>
-            <p className="text-[15px] font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-emerald-500 mb-20 animate-type delay-8500 drop-shadow-lg leading-relaxed max-w-[300px] mx-auto">The door isn’t closed on you: you can start changing course today. You’re exactly where you need to be.</p>
+            <p className="text-[15px] font-display font-bold text-lime-400 mb-20 animate-cinematic delay-8500 leading-relaxed max-w-[300px] mx-auto">The door isn't closed on you: you can start changing course today. You're exactly where you need to be.</p>
             <div className="absolute bottom-6 w-full animate-cinematic delay-11000">
               <TactileButton onClick={handleNext}>Step Forward</TactileButton>
             </div>
@@ -383,7 +383,7 @@ export const Onboarding = ({ onComplete }: any) => {
             <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Real change happens step by step.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">Like moving a mountain one stone at a time, every small action adds up.</p>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-4500">One day of effort can become a habit. Habits shape who we are.</p>
-            <p className="text-2xl font-display font-bold text-gradient gradient-magenta-orange mb-12 animate-type delay-7000">So remember: even the tiniest repeatable step is a real beginning.</p>
+            <p className="text-2xl font-display font-bold text-pink-400 mb-12 animate-cinematic delay-7000">So remember: even the tiniest repeatable step is a real beginning.</p>
             <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-9500 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
           </div>
         )}
