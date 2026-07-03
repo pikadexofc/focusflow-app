@@ -193,8 +193,9 @@ export const InjectedStyles = () => (
     }
     
     @keyframes spatialReveal { 
-      0% { opacity: 0; transform: translateY(15px) scale(0.97); } 
-      100% { opacity: 1; transform: translateY(0) scale(1); } 
+      0% { opacity: 0; transform: translateY(15px) scale(0.97); visibility: hidden; } 
+      1% { opacity: 0; visibility: visible; }
+      100% { opacity: 1; transform: translateY(0) scale(1); visibility: visible; } 
     }
     @keyframes spatialHide { 
       0% { opacity: 1; transform: translateY(0) scale(1); } 
