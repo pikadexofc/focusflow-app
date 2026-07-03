@@ -88,18 +88,16 @@ export const InjectedStyles = () => (
     .font-body { font-family: 'Outfit', sans-serif; }
     .font-script { font-family: 'Yellowtail', cursive; }
 
-    /* Premium 3D Glassmorphism */
+    /* Premium 3D Glassmorphism - LITE OPTIMIZED */
     .glass-card {
-      background: linear-gradient(145deg, rgba(30, 30, 30, 0.6) 0%, rgba(10, 10, 10, 0.8) 100%);
-      backdrop-filter: blur(50px);
-      -webkit-backdrop-filter: blur(50px);
+      background: linear-gradient(145deg, rgba(35, 35, 35, 0.95) 0%, rgba(15, 15, 15, 0.98) 100%);
+      /* backdrop-filter removed for battery/GPU optimization */
       border-top: 1px solid rgba(255, 255, 255, 0.15);
       border-left: 1px solid rgba(255, 255, 255, 0.08);
       border-bottom: 1px solid rgba(0, 0, 0, 0.8);
       border-right: 1px solid rgba(0, 0, 0, 0.6);
       box-shadow: 
-        0 30px 60px -15px rgba(0, 0, 0, 1), 
-        0 10px 20px -5px rgba(0, 0, 0, 0.8),
+        0 20px 40px -15px rgba(0, 0, 0, 1), 
         inset 0 1px 2px rgba(255, 255, 255, 0.1);
       border-radius: 2rem;
       position: relative;
@@ -126,8 +124,8 @@ export const InjectedStyles = () => (
 
     /* Glossy & Tactile Buttons */
     .btn-tactile {
-      background: linear-gradient(180deg, rgba(45, 45, 45, 0.5) 0%, rgba(15, 15, 15, 0.8) 100%);
-      backdrop-filter: blur(20px);
+      background: linear-gradient(180deg, rgba(55, 55, 55, 0.9) 0%, rgba(20, 20, 20, 1) 100%);
+      /* backdrop-filter removed for battery/GPU optimization */
       border-top: 1px solid rgba(255, 255, 255, 0.2);
       border-bottom: 1px solid rgba(0, 0, 0, 0.9);
       box-shadow: 
@@ -186,29 +184,25 @@ export const InjectedStyles = () => (
     .gradient-magenta-orange { background-image: linear-gradient(to right, var(--glow-magenta), var(--glow-amber)); }
     .gradient-lime-emerald { background-image: linear-gradient(to right, var(--glow-lime), #10b981); }
 
-    /* Animations */
+    /* Animations - Simplified for Battery/GPU */
     @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-12px) rotate(1.5deg); }
+      /* Disabled for battery optimization */
     }
     @keyframes drift {
-      0% { transform: translate(0px, 0px) scale(1); }
-      33% { transform: translate(30px, -40px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.9); }
-      100% { transform: translate(0px, 0px) scale(1); }
+      /* Disabled for battery optimization */
     }
     
     @keyframes spatialReveal { 
-      0% { opacity: 0; transform: translateY(15px) scale(0.97); filter: blur(10px); } 
-      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
+      0% { opacity: 0; transform: translateY(15px) scale(0.97); } 
+      100% { opacity: 1; transform: translateY(0) scale(1); } 
     }
     @keyframes spatialHide { 
-      0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); } 
-      100% { opacity: 0; transform: translateY(-15px) scale(0.97); filter: blur(10px); } 
+      0% { opacity: 1; transform: translateY(0) scale(1); } 
+      100% { opacity: 0; transform: translateY(-15px) scale(0.97); } 
     }
 
-    .animate-float { animation: float 8s ease-in-out infinite; }
-    .animate-drift { animation: drift 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); }
+    .animate-float { /* Disabled */ }
+    .animate-drift { /* Disabled */ }
     
     /* animation-fill-mode:both holds the 0% keyframe (opacity:0) during the delay,
        preventing any flash before the stagger fires */
@@ -565,7 +559,7 @@ export default function App() {
         <div className="absolute inset-0 z-0 bg-grid opacity-10 pointer-events-none" />
 
         {/* Main Mobile/App Container */}
-        <div className="w-full max-w-[428px] h-[100dvh] relative flex flex-col z-10 bg-[#050505]/40 backdrop-blur-[80px] shadow-[0_0_100px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.05)] border-x border-white/[0.05] transform-gpu">
+        <div className="w-full max-w-[428px] h-[100dvh] relative flex flex-col z-10 bg-[#0a0a0a]/90 shadow-[0_0_100px_rgba(0,0,0,0.9),inset_0_0_0_1px_rgba(255,255,255,0.05)] border-x border-white/[0.05] transform-gpu">
           
           {/* Main Scrollable Area */}
           <main className="flex-1 overflow-y-auto no-scrollbar px-6 pt-14">
