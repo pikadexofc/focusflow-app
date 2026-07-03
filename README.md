@@ -22,7 +22,8 @@
 FocusFlow operates under the core belief that productivity systems should be **low-overhead, local, and calm**. 
 
 * **Zero Cloud Leakage**: Your data resides strictly in local storage. It is never transmitted, processed, or profiled.
-* **Premium Tactile Interfaces**: High-fidelity GPU-composited animations (`transform` and `opacity` only) maintain a consistent 60 FPS profile.
+* **Persistent Native Notifications**: `@capacitor/local-notifications` integration ensures loud, exact-minute alarms bypass battery Doze mode to keep you on target.
+* **Lite Optimization Profile**: Continuous CSS animations (`float`, `blur()`) are stripped back to save GPU overhead and battery drain, maintaining a consistent 60 FPS profile without heating up your device.
 * **The 80/20 Aesthetic**: 80% clean, minimal space; 20% high-fidelity premium moments. No glowing shadow resource bloat.
 
 ---
@@ -98,7 +99,8 @@ The static assets will be compiled directly to the `dist/` directory, optimized 
 - [x] State Modularization (Refactored `App.tsx` into domain-specific tab modules)
 - [x] Memory & Re-render optimization (Memoization of heavy collection filters)
 - [x] Accessibility Touch Target Upgrade (Conformed tap targets to 44px/48px thresholds)
-- [x] Conventional Github Repository Templates & Standards
+- [x] Persistent Local Notifications (Native exact alarms with loud channels)
+- [x] Lite Battery Optimization (Removed heavy GPU-composited blurs)
 - [ ] Offline-first sync logic (optional encrypted file export protocols)
 
 ---

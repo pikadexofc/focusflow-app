@@ -3,6 +3,7 @@ import { Plus, Circle, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SpatialCard, Badge, SegmentedControl3D, springPresets } from './CommonUI';
 import { getLocalDateStr, format12Hour } from '../utils';
+import { NotificationEngine } from '../NotificationEngine';
 
 export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) => {
   const [newTask, setNewTask] = useState('');
@@ -13,15 +14,20 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
 
   const handleAddTask = () => {
     if (!newTask.trim()) return;
-    setTasks([{ 
-      id: Date.now(), 
+    const newId = Date.now();
+    const taskObj = { 
+      id: newId, 
       title: newTask, 
       priority, 
       goalId: taskGoalId || null,
       deadline: taskDeadline,
       time: taskTime,
       completed: false 
-    }, ...tasks]);
+    };
+    
+    setTasks([taskObj, ...tasks]);
+    NotificationEngine.scheduleTaskNotification(taskObj);
+    
     setNewTask('');
     setTaskGoalId('');
     setTaskDeadline(getLocalDateStr());

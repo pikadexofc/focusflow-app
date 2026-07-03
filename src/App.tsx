@@ -19,6 +19,8 @@ import {
   loadData, saveData, playSound, getOrdinal, getLocalDateStr, hexToRgb, getTaskWeight 
 } from './utils';
 
+import { NotificationEngine } from './NotificationEngine';
+
 // --- ERROR BOUNDARY ---
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -255,6 +257,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [particles, setParticles] = useState<any[]>([]);
   const [processingTasks, setProcessingTasks] = useState(new Set());
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   
   const [timeBurn, setTimeBurn] = useState({
     day: { pct: 0, main: '0%', sub: '00:00' },
@@ -304,6 +307,17 @@ export default function App() {
       setAppData(fresh);
       saveData(fresh);
     }
+    
+    // Initialize notifications
+    NotificationEngine.init().then(() => {
+      NotificationEngine.requestPermissions().then((granted) => {
+        setNotificationsEnabled(granted);
+        if (granted) {
+          NotificationEngine.scheduleDailyBriefing();
+        }
+      });
+    });
+
     setIsLoading(false);
   }, []);
 
@@ -424,6 +438,8 @@ export default function App() {
         }
       }
     });
+
+    NotificationEngine.cancelTaskNotification(p.id);
 
     setProcessingTasks(prev => { const s = new Set(prev); s.delete(p.id); return s; });
     showToast(`Task complete (+${xp} XP)`);
@@ -564,6 +580,12 @@ export default function App() {
           
           {/* Main Scrollable Area */}
           <main className="flex-1 overflow-y-auto no-scrollbar px-6 pt-14">
+            {notificationsEnabled === false && (
+              <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 mb-4 flex items-center justify-between text-red-200">
+                <span className="text-xs font-display font-bold uppercase tracking-widest">Alarms Disabled</span>
+                <span className="text-[10px] font-body opacity-80">Check OS settings to enable.</span>
+              </div>
+            )}
             <AnimatePresence mode="wait">
               {activeTab === 'Dashboard' && (
                 <motion.div
