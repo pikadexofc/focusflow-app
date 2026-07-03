@@ -25,14 +25,8 @@ export const NotificationEngine = {
     if (Capacitor.getPlatform() === 'web') return true;
 
     try {
-      const permStatus = await LocalNotifications.checkPermissions();
-      if (permStatus.display !== 'granted') {
-        const req = await LocalNotifications.requestPermissions();
-        if (req.display !== 'granted') {
-          return false;
-        }
-      }
-      return true;
+      const req = await LocalNotifications.requestPermissions();
+      return req.display === 'granted';
     } catch (e) {
       console.error('Failed to request notification permissions:', e);
       return false;
@@ -60,7 +54,6 @@ export const NotificationEngine = {
             id: task.id,
             schedule: { at: scheduleDate },
             channelId: 'focus_channel',
-            smallIcon: 'ic_stat_icon_config_sample',
             sound: 'focus_alarm.wav',
           }
         ]
@@ -92,7 +85,6 @@ export const NotificationEngine = {
               on: { hour: 8, minute: 0 } // Every day at 8:00 AM
             },
             channelId: 'focus_channel',
-            smallIcon: 'ic_stat_icon_config_sample',
             sound: 'focus_alarm.wav',
           }
         ]
