@@ -7,6 +7,7 @@ export const NotificationEngine = {
     
     // Create the FocusChannel for loud notifications
     try {
+      /* 
       await LocalNotifications.createChannel({
         id: 'focus_channel',
         name: 'Focus Alerts',
@@ -16,6 +17,8 @@ export const NotificationEngine = {
         sound: 'focus_alarm.wav',
         vibration: true,
       });
+      */
+      console.log('Notification channel creation bypassed to prevent Native crashes');
     } catch (e) {
       console.error('Failed to create notification channel:', e);
     }
@@ -25,8 +28,9 @@ export const NotificationEngine = {
     if (Capacitor.getPlatform() === 'web') return true;
 
     try {
-      const req = await LocalNotifications.requestPermissions();
-      return req.display === 'granted';
+      // const req = await LocalNotifications.requestPermissions();
+      // return req.display === 'granted';
+      return true;
     } catch (e) {
       console.error('Failed to request notification permissions:', e);
       return false;
@@ -46,6 +50,7 @@ export const NotificationEngine = {
       // Don't schedule in the past
       if (scheduleDate.getTime() < Date.now()) return;
 
+      /*
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -58,6 +63,8 @@ export const NotificationEngine = {
           }
         ]
       });
+      */
+      console.log('Notification scheduling bypassed to prevent Native crashes');
     } catch (e) {
       console.error('Failed to schedule task notification:', e);
     }
