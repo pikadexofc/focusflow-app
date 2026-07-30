@@ -1,27 +1,33 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
+// Notification icon resource name (maps to res/drawable/ic_notification.png)
+const NOTIFICATION_ICON = 'ic_notification';
+const NOTIFICATION_CHANNEL = 'focus_channel';
+const NOTIFICATION_SOUND = 'focus_alarm';
+
 export const NotificationEngine = {
   async init() {
     if (Capacitor.getPlatform() === 'web') return;
     
-    // Create the FocusChannel for loud notifications
     try {
-      // Force delete existing channel to update sound configurations
-      await LocalNotifications.deleteChannel({ id: 'focus_channel' });
+      // Force delete existing channel to pick up updated sound/importance
+      await LocalNotifications.deleteChannel({ id: NOTIFICATION_CHANNEL });
       
+      // importance 5 = MAX → triggers heads-up (on-screen overlay) display
+      // visibility 1 = PUBLIC → shows on lock screen
       await LocalNotifications.createChannel({
-        id: 'focus_channel',
+        id: NOTIFICATION_CHANNEL,
         name: 'Focus Alerts',
-        description: 'Loud alerts for tasks and habits',
+        description: 'Loud persistent alerts for tasks and habits',
         importance: 5,
         visibility: 1,
-        sound: 'focus_alarm',
+        sound: NOTIFICATION_SOUND,
         vibration: true,
       });
       console.log('Notification channel created successfully.');
     } catch (e) {
-      console.error('Failed to create notification channel (Likely device specific):', e);
+      console.error('Failed to create notification channel:', e);
     }
   },
 
@@ -47,18 +53,20 @@ export const NotificationEngine = {
       
       const scheduleDate = new Date(year, month - 1, day, hour, minute, 0);
       
-      // Don't schedule in the past
       if (scheduleDate.getTime() < Date.now()) return;
 
       await LocalNotifications.schedule({
         notifications: [
           {
-            title: 'Task Due!',
+            title: '🎯 Task Due!',
             body: task.title,
             id: task.id,
             schedule: { at: scheduleDate },
-            channelId: 'focus_channel',
-            sound: 'focus_alarm',
+            channelId: NOTIFICATION_CHANNEL,
+            sound: NOTIFICATION_SOUND,
+            smallIcon: NOTIFICATION_ICON,
+            largeIcon: NOTIFICATION_ICON,
+            ongoing: true,
           }
         ]
       });
@@ -82,14 +90,17 @@ export const NotificationEngine = {
       await LocalNotifications.schedule({
         notifications: [
           {
-            title: 'Daily Briefing',
+            title: '📋 Daily Briefing',
             body: 'Time to review your targets and set your focus for the day.',
-            id: 999999, // Static ID for daily briefing
+            id: 999999,
             schedule: {
-              on: { hour: 8, minute: 0 } // Every day at 8:00 AM
+              on: { hour: 8, minute: 0 }
             },
-            channelId: 'focus_channel',
-            sound: 'focus_alarm',
+            channelId: NOTIFICATION_CHANNEL,
+            sound: NOTIFICATION_SOUND,
+            smallIcon: NOTIFICATION_ICON,
+            largeIcon: NOTIFICATION_ICON,
+            ongoing: true,
           }
         ]
       });
