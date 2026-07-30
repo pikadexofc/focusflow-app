@@ -23,8 +23,7 @@ import {
 import { NotificationEngine } from './NotificationEngine';
 import { ErrorBoundary } from './ErrorBoundary';
 import { InjectedStyles } from './styles/GlobalStyles';
-
-
+import { useWebAlarms } from './hooks/useWebAlarms';
 
 // ============================================================================
 // MAIN APP WRAPPER
@@ -46,6 +45,17 @@ export default function App() {
 
   const [yieldRange, setYieldRange] = useState('7d');
   const fileInputRef = useRef<any>(null);
+
+  const { stopAlarm } = useWebAlarms(appData?.tasks || []);
+  const [activeAlarm, setActiveAlarm] = useState<any>(null);
+
+  useEffect(() => {
+    const handleAlarm = (e: any) => {
+      setActiveAlarm(e.detail);
+    };
+    window.addEventListener('alarm-triggered', handleAlarm);
+    return () => window.removeEventListener('alarm-triggered', handleAlarm);
+  }, []);
 
   // Initialize and load from local storage
   useEffect(() => {
@@ -87,15 +97,17 @@ export default function App() {
       saveData(fresh);
     }
     
-    // Initialize notifications
-    NotificationEngine.init().then(() => {
-      NotificationEngine.requestPermissions().then((granted) => {
-        setNotificationsEnabled(granted);
-        if (granted) {
-          NotificationEngine.scheduleDailyBriefing();
-        }
+    // Initialize notifications safely with a 5000ms delay to prevent Native NPE boot loop
+    setTimeout(() => {
+      NotificationEngine.init().then(() => {
+        NotificationEngine.requestPermissions().then((granted) => {
+          setNotificationsEnabled(granted);
+          if (granted) {
+            NotificationEngine.scheduleDailyBriefing();
+          }
+        });
       });
-    });
+    }, 5000);
 
     setIsLoading(false);
   }, []);
@@ -531,6 +543,37 @@ export default function App() {
               <span className="text-white font-display font-bold text-[14px] tracking-wide">{toast}</span>
             </div>
           )}
+
+          {/* Active Web Alarm Modal */}
+          <AnimatePresence>
+            {activeAlarm && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              >
+                <div className="glass-card p-8 flex flex-col items-center gap-6 rounded-3xl border border-red-500/50 shadow-[0_0_60px_rgba(239,68,68,0.3)] text-center max-w-sm w-full">
+                  <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
+                    <Target size={40} className="text-red-500" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-2xl font-bold text-white mb-2 uppercase tracking-wider">Target Due!</h2>
+                    <p className="text-zinc-300 text-lg">{activeAlarm.title}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      stopAlarm();
+                      setActiveAlarm(null);
+                    }}
+                    className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl transition-colors uppercase tracking-wider"
+                  >
+                    Acknowledge
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Reintroduced Completion Particle Rendering */}
