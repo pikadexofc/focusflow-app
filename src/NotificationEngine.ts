@@ -7,13 +7,16 @@ export const NotificationEngine = {
     
     // Create the FocusChannel for loud notifications
     try {
+      // Force delete existing channel to update sound configurations
+      await LocalNotifications.deleteChannel({ id: 'focus_channel' });
+      
       await LocalNotifications.createChannel({
         id: 'focus_channel',
         name: 'Focus Alerts',
         description: 'Loud alerts for tasks and habits',
         importance: 5,
         visibility: 1,
-        sound: 'focus_alarm.wav',
+        sound: 'focus_alarm',
         vibration: true,
       });
       console.log('Notification channel created successfully.');
@@ -55,7 +58,7 @@ export const NotificationEngine = {
             id: task.id,
             schedule: { at: scheduleDate },
             channelId: 'focus_channel',
-            sound: 'focus_alarm.wav',
+            sound: 'focus_alarm',
           }
         ]
       });
@@ -86,7 +89,7 @@ export const NotificationEngine = {
               on: { hour: 8, minute: 0 } // Every day at 8:00 AM
             },
             channelId: 'focus_channel',
-            sound: 'focus_alarm.wav',
+            sound: 'focus_alarm',
           }
         ]
       });
