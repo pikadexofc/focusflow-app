@@ -53,23 +53,23 @@ export const Onboarding = ({ onComplete }: any) => {
         {/* Screen 1: Welcome */}
         {step === 0 && (
           <div className="flex-1 flex flex-col justify-center items-center text-center">
-            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Hello, and welcome.</h2>
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic delay-500">Hello, and welcome.</h2>
             <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1500">The outside world can feel very loud.</p>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-3500">Here, there’s no judgment and no hurry.</p>
-            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-5500">Take off your mask and relax. This is your space, you control it.</p>
-            <p className="text-sm font-body text-blue-400/80 animate-cinematic delay-8500">Feel free to pause or step away anytime.</p>
-            <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-10000 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-3000">Here, there’s no judgment and no hurry.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-4500">Take off your mask and relax. This is your space, you control it.</p>
+            <p className="text-sm font-body text-blue-400/80 animate-cinematic delay-6000">Feel free to pause or step away anytime.</p>
+            <p className="text-[10px] font-display text-zinc-500 animate-cinematic delay-7500 absolute bottom-6 uppercase tracking-widest cursor-pointer hover:text-white transition-colors" onClick={handleNext}>Tap to continue</p>
           </div>
         )}
 
         {/* Screen 2: The Shift */}
         {step === 1 && (
           <div className="flex-1 flex flex-col justify-center items-center text-center">
-            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic">Change often starts quietly.</h2>
-            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-2000">It doesn’t need to be loud or sudden.</p>
-            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-4000">First, let’s take a moment to be here now.</p>
-            <p className="text-xl font-display font-medium text-cyan-400 animate-cinematic delay-6000">We'll slow down and breathe.</p>
-            <div className="absolute bottom-6 w-full animate-cinematic delay-8000">
+            <h2 className="text-3xl font-display font-bold text-white mb-6 animate-cinematic delay-500">Change often starts quietly.</h2>
+            <p className="text-lg font-body font-light text-zinc-400 mb-6 animate-cinematic delay-1500">It doesn’t need to be loud or sudden.</p>
+            <p className="text-lg font-body font-light text-zinc-400 mb-12 animate-cinematic delay-3000">First, let’s take a moment to be here now.</p>
+            <p className="text-xl font-display font-medium text-cyan-400 animate-cinematic delay-4500">We'll slow down and breathe.</p>
+            <div className="absolute bottom-6 w-full animate-cinematic delay-6000">
               <TactileButton onClick={handleNext}>Take a breath</TactileButton>
             </div>
           </div>
