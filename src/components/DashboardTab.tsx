@@ -63,22 +63,28 @@ export const DashboardTab = ({ userData, tasks, setTasks, addXP, buff1, buff2, c
     });
   }, [goals]);
 
-  const queueItems = React.useMemo(() => [
-    ...activeTasks.map((t: any) => ({
-      id: `task-${t.id}`,
-      title: t.title,
-      type: 'task',
-      priority: t.priority,
-      original: t
-    })),
-    ...activeGoals.map((g: any) => ({
+  const queueItems = React.useMemo(() => {
+    const sortedTasks = [...activeTasks]
+      .sort((a: any, b: any) => getTaskWeight(b.priority) - getTaskWeight(a.priority))
+      .slice(0, 5)
+      .map((t: any) => ({
+        id: `task-${t.id}`,
+        title: t.title,
+        type: 'task',
+        priority: t.priority,
+        original: t
+      }));
+
+    const formattedGoals = activeGoals.slice(0, 3).map((g: any) => ({
       id: `goal-${g.id}`,
       title: `${g.title} (${g.timeline})`,
       type: 'goal',
       priority: 'medium',
       original: g
-    }))
-  ], [activeTasks, activeGoals]);
+    }));
+
+    return [...sortedTasks, ...formattedGoals];
+  }, [activeTasks, activeGoals]);
 
   return (
     <div className="space-y-6 pb-32 animate-cinematic">

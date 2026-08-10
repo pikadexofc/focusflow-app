@@ -7,10 +7,24 @@ export const getTaskWeight = (priority: string) => {
   return weightMap[p] || 2;
 };
 
+export const pruneOldData = (data: any) => {
+  if (!data || !data.tasks || !Array.isArray(data.tasks)) return data;
+  const NinetyDaysAgo = Date.now() - (90 * 86400 * 1000);
+  data.tasks = data.tasks.filter((t: any) => {
+    if (!t.completed) return true;
+    if (!t.completedAt) return true;
+    const completedTime = new Date(t.completedAt).getTime();
+    return completedTime >= NinetyDaysAgo;
+  });
+  return data;
+};
+
 export const loadData = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return pruneOldData(parsed);
   } catch {
     return null;
   }
