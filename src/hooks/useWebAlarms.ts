@@ -54,11 +54,11 @@ export function useWebAlarms(tasks: any[]) {
       if (shouldAlarm) {
         audio.play().catch(e => console.error("Web audio play failed:", e));
         
-        // Auto-stop after 30 seconds if not dismissed manually
+        // Auto-stop after 5 seconds for a gentle notification
         setTimeout(() => {
           audio.pause();
           audio.currentTime = 0;
-        }, 30000);
+        }, 5000);
       }
     }, 10000); // Check every 10 seconds
 

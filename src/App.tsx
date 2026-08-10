@@ -484,8 +484,8 @@ export default function App() {
           </main>
 
           {/* Dynamic Island Floating Bottom Navigation Dock */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] z-40">
-            <nav className="pointer-events-auto glass-card rounded-[2.5rem] p-2.5 shadow-[0_30px_60px_-12px_rgba(0,0,0,1)] border border-white/[0.1] bg-[#0a0a0a]/90">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] z-40 pb-[env(safe-area-inset-bottom,0px)]">
+            <nav className="pointer-events-auto glass-card rounded-[2.5rem] p-3 shadow-[0_30px_60px_-12px_rgba(0,0,0,1)] border border-white/[0.1] bg-[#0a0a0a]/95">
               <div className="flex justify-between items-center px-2">
                 {tabs.map(tab => {
                   const Icon = tab.icon;
