@@ -104,7 +104,7 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
                   transition={springPresets.fluid}
                   whileHover={{ scale: 1.015 }}
                   whileTap={{ scale: 0.98 }}
-                  className="glass-card p-5 rounded-[1.5rem] flex items-center gap-4 group"
+                  className="glass-card p-5 rounded-[1.5rem] flex items-center gap-4 group cursor-pointer transition-colors hover:bg-white/[0.04]"
                 >
                   <motion.button 
                     whileHover={{ scale: 1.15 }}
@@ -112,13 +112,13 @@ export const TasksTab = ({ tasks, setTasks, addXP, goals, executeTask }: any) =>
                     transition={springPresets.interactive}
                     type="button" 
                     onClick={(e) => executeTask(task, e)}
-                    className="w-11 h-11 flex items-center justify-center -ml-2 -my-2"
+                    className="w-11 h-11 flex items-center justify-center -ml-2 -my-2 shrink-0 rounded-full hover:bg-blue-500/10 transition-colors"
                   >
-                    <Circle className="text-zinc-600 group-hover:text-blue-400 transition-colors w-7 h-7" />
+                    <Circle className="text-zinc-500 group-hover:text-blue-400 transition-colors w-6 h-6 stroke-[1.75]" />
                   </motion.button>
-                  <div className="flex-1">
-                    <p className="text-white font-body text-[16px] font-medium leading-tight">{task.title}</p>
-                    <span className="text-[9px] font-display font-bold text-zinc-500 uppercase tracking-wider block mt-1">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-body text-[16px] font-medium leading-tight truncate">{task.title}</p>
+                    <span className="text-[10px] font-display font-bold text-zinc-400 uppercase tracking-wider block mt-1">
                       {task.deadline === getLocalDateStr() ? 'Due Today' : `Due: ${task.deadline}`}
                       {task.time ? ` at ${format12Hour(task.time)}` : ''}
                     </span>
